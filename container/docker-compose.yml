@@ -38,6 +38,6 @@ services:
 
 networks:
   hnet:
-    name: hand-net
+    name: hands-net
     driver: bridge
 
