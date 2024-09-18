@@ -1,0 +1,20 @@
+server:
+  port: 8111
+
+spring:
+  application:
+    name: apisl.handson.keycloak.ressrv
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+#          issuer-uri: http://localhost:8080/realms/handson
+#          jwk-set-uri: http://localhost:8080/realms/handson/protocol/openid-connect/certs
+          jwk-set-uri: http://keycloak:8080/realms/handson/protocol/openid-connect/certs
+
+logging:
+  level:
+    root: FATAL
+    org:
+      springframework:
+        security: TRACE

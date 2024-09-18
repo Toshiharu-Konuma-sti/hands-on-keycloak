@@ -1,0 +1,51 @@
+server:
+  port: 8222
+
+spring:
+  application:
+    name: apisl.handson.keycloak.rp.openid
+  security:
+    oauth2:
+      client:
+        registration:
+          kc-baseball-ply:
+            provider: keycloak
+            client-name: Baseball as a Player!!!
+            client-id: app-baseball
+            client-secret: my-secret
+            scope: openid
+          kc-baseball-mgr:
+            provider: keycloak
+            client-name: Baseball as a Manager!!!
+            client-id: app-baseball
+            client-secret: my-secret
+            scope: openid, baseball.manager
+          kc-soccer-ply:
+            provider: keycloak
+            client-name: Soccer as a Player!!!
+            client-id: app-soccer
+            client-secret: my-secret
+            scope: openid
+          kc-soccer-mgr:
+            provider: keycloak
+            client-name: Soccer as a Manager!!!
+            client-id: app-soccer
+            client-secret: my-secret
+            scope: openid, soccer.manager
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/handson
+            jwk-set-uri: http://localhost:8080/realms/handson/protocol/openid-connect/certs
+            user-name-attribute: preferred_username
+
+handson:
+  relying-party:
+    api-server:
+      host: http://localhost:8111
+
+logging:
+  level:
+    root: FATAL
+    org:
+      springframework:
+        security: TRACE
