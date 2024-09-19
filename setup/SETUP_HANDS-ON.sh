@@ -30,6 +30,14 @@ echo "##### START ######################################"
 
 	run_assing_def_client_scope_to_client \
 		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "my-scope"
+	run_assing_def_client_scope_to_client \
+		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "baseball.manager"
+	run_assing_def_client_scope_to_client \
+		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "baseball.player"
+	run_assing_def_client_scope_to_client \
+		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "soccer.manager"
+	run_assing_def_client_scope_to_client \
+		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "soccer.player"
 
 	run_assing_opt_client_scope_to_client \
 		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-baseball" "baseball.manager"
