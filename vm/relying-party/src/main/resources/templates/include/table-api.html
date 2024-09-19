@@ -1,16 +1,17 @@
 
 <div>Call API with Access Token.</div>
 <table id="tbl-api">
-<tr><th colspan="4">Resource Server</th><th>-</th></tr>
-<tr><td>/<a href="javascript: submitCallApi('/apis');">apis</a></td><td></td><td></td><td></td><td><span sec:authorize="hasAnyAuthority('SCOPE_baseball.player', 'SCOPE_soccer.player')">O</span></td></tr>
-<tr><td>`----</td><td>/<a href="javascript: submitCallApi('/apis/sports');">sports</a></td><td></td><td></td><td><span sec:authorize="hasAnyAuthority('SCOPE_baseball.player', 'SCOPE_soccer.player')">O</span></td></tr>
-<tr><td></td><td>|------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball');">baseball</a></td><td></td><td><span sec:authorize="hasAuthority('SCOPE_baseball.player')">O</span></td></tr>
-<tr><td></td><td>|</td><td>|--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball/managers');">managers</a></td><td><span sec:authorize="hasAuthority('SCOPE_baseball.manager')">O</span></td></tr>
-<tr><td></td><td>|</td><td>`--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball/players');">players</a></td><td><span sec:authorize="hasAuthority('SCOPE_baseball.player')">O</span></td></tr>
-<tr><td></td><td>`------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer');">soccer</a></td><td></td><td><span sec:authorize="hasAuthority('SCOPE_soccer.player')">O</span></td></tr>
-<tr><td></td><td></td><td>|--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer/managers');">managers</a></td><td><span sec:authorize="hasAuthority('SCOPE_soccer.manager')">O</span></td></tr>
-<tr><td></td><td></td><td>`--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer/players');">players</a></td><td><span sec:authorize="hasAuthority('SCOPE_soccer.player')">O</span></td></tr>
-<tr><th colspan="4">Id Provider</th><th>-</th></tr>
-<tr><td colspan="4">/<a href="javascript: submitCallApi('/userinfo');">userinfo_endpoint</a></td><td><span sec:authorize="isAuthenticated()">O</span></td></tr>
+<tr><th colspan="5">Resource Server</th><th>-</th></tr>
+<tr><td>/<a href="javascript: submitCallApi('/');">(root)</a></td><td></td><td></td><td></td><td></td><td><span>O</span></td></tr>
+<tr><td>`------</td><td>/<a href="javascript: submitCallApi('/apis');">apis</a></td><td></td><td></td><td></td><td><span sec:authorize="isAuthenticated()">O</span></td></tr>
+<tr><td></td><td>`----</td><td>/<a href="javascript: submitCallApi('/apis/sports');">sports</a></td><td></td><td></td><td><span sec:authorize="hasAnyAuthority('SCOPE_baseball.player', 'SCOPE_soccer.player')">O</span></td></tr>
+<tr><td></td><td></td><td>|------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball');">baseball</a></td><td></td><td><span sec:authorize="hasAuthority('SCOPE_baseball.player')">O</span></td></tr>
+<tr><td></td><td></td><td>|</td><td>|--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball/managers');">managers</a></td><td><span sec:authorize="hasAuthority('SCOPE_baseball.manager')">O</span></td></tr>
+<tr><td></td><td></td><td>|</td><td>`--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball/players');">players</a></td><td><span sec:authorize="hasAuthority('SCOPE_baseball.player')">O</span></td></tr>
+<tr><td></td><td></td><td>`------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer');">soccer</a></td><td></td><td><span sec:authorize="hasAuthority('SCOPE_soccer.player')">O</span></td></tr>
+<tr><td></td><td></td><td></td><td>|--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer/managers');">managers</a></td><td><span sec:authorize="hasAuthority('SCOPE_soccer.manager')">O</span></td></tr>
+<tr><td></td><td></td><td></td><td>`--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer/players');">players</a></td><td><span sec:authorize="hasAuthority('SCOPE_soccer.player')">O</span></td></tr>
+<tr><th colspan="5">Id Provider</th><th>-</th></tr>
+<tr><td colspan="5">/<a href="javascript: submitCallApi('/userinfo');">userinfo_endpoint</a></td><td><span sec:authorize="isAuthenticated()">O</span></td></tr>
 </table>
 

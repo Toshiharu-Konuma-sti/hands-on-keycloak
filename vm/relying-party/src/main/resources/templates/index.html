@@ -22,6 +22,7 @@
     <div th:replace="~{include/form-api}">form</div>
     <div th:replace="~{include/hidden}">hidden</div>
     <div th:replace="~{include/footer}">footer</div>
+<div sec:authorize="hasAuthority('SCOPE_baseball.player') == false">TEST: not having SCOPE_baseball.player</div>
   </div>
 </div>
 

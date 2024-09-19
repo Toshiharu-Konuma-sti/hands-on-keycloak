@@ -23,9 +23,9 @@ echo "##### START ######################################"
 	call_create_client_scope $HST $AC_TOKEN $MY_REALM "soccer.player"
 	JSON_SCP=$(call_get_client_scopes $HST $AC_TOKEN $MY_REALM)
 
-	call_create_client $HST $AC_TOKEN $MY_REALM "my-web-app" "http://localhost:8222/*" false
-	call_create_client $HST $AC_TOKEN $MY_REALM "app-baseball" "http://localhost:8222/*" true
-	call_create_client $HST $AC_TOKEN $MY_REALM "app-soccer" "http://localhost:8222/*" true
+	call_create_client $HST $AC_TOKEN $MY_REALM "my-web-app" "http://localhost:8222/*,http://localhost:8333/*" false
+	call_create_client $HST $AC_TOKEN $MY_REALM "app-baseball" "http://localhost:8222/*,http://localhost:8333/*" true
+	call_create_client $HST $AC_TOKEN $MY_REALM "app-soccer" "http://localhost:8222/*,http://localhost:8333/*" true
 	JSON_CLT=$(call_get_clients $HST $AC_TOKEN $MY_REALM)
 
 	run_assing_def_client_scope_to_client \
@@ -50,6 +50,7 @@ echo "##### START ######################################"
 
 	call_create_group $HST $AC_TOKEN $MY_REALM "my-admin-grp"
 	call_create_group $HST $AC_TOKEN $MY_REALM "my-staff-grp"
+	call_create_group $HST $AC_TOKEN $MY_REALM "my-flat-grp"
 	JSON_GRP=$(call_get_groups $HST $AC_TOKEN $MY_REALM)
 
 	call_create_realm_role $HST $AC_TOKEN $MY_REALM "my-admin-role"
@@ -60,6 +61,10 @@ echo "##### START ######################################"
 		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-admin-grp" "my-admin-role"
 	run_assing_realm_role_to_group \
 		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-staff-grp" "my-staff-role"
+	run_assing_realm_role_to_group \
+		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-flat-grp" "my-admin-role"
+	run_assing_realm_role_to_group \
+		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-flat-grp" "my-staff-role"
 
 ##	call_enter_message "password of user to create"
 ##	PASSWD=$(call_enter_capture)
@@ -67,13 +72,16 @@ echo "##### START ######################################"
 	call_create_user $HST $AC_TOKEN $MY_REALM $USER_NM $USER_NM
 	USER_NM="staff.sios"
 	call_create_user $HST $AC_TOKEN $MY_REALM $USER_NM $USER_NM
-	JSON_USR=$(call_get_users $HST $AC_TOKEN $MY_REALM)
-	USER_NM="taro.sios"
+	USER_NM="flat.sios"
 	call_create_user $HST $AC_TOKEN $MY_REALM $USER_NM $USER_NM
+	JSON_USR=$(call_get_users $HST $AC_TOKEN $MY_REALM)
 
 	run_assing_user_to_group \
 		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-admin-grp" "admin.sios"
 	run_assing_user_to_group \
 		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-staff-grp" "staff.sios"
+	run_assing_user_to_group \
+		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-flat-grp" "flat.sios"
+
 
 echo "\n##### FINISH #####################################"

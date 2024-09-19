@@ -8,12 +8,22 @@ import java.util.Map;
 public class ResourceServerRestController {
 
 //	api-svr
+//	/
 //	`-- /apis
 //	    `-- /sports
 //	        |-- /baseball
 //	        `-- /soccer
 //	            |-- /managers
 //	            `-- /players
+
+	// {{{ public Map<String, String>[] root()
+	@RequestMapping("/")
+	public Map<String, String>[] root() {
+		Map<String, String> map[] = new Map[1];
+		map[0] = Map.of("id", "1", "path", "apis");
+		return map;
+	}
+	// }}}
 
 	// {{{ public Map<String, String>[] apis()
 	@RequestMapping("/apis")
