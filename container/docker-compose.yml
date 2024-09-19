@@ -22,7 +22,7 @@ services:
 
   ressvr:
     container_name: ressvr
-    build: ./java/
+    image: eclipse-temurin:21
     networks:
       - hnet
     ports:
@@ -30,7 +30,7 @@ services:
     volumes:
       - ./resource-server:/webapi
     working_dir: /webapi
-    command: mvn spring-boot:run
+    command: ./mvnw spring-boot:run
     tty: true
     depends_on:
       keycloak:
