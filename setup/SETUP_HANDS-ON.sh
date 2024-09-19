@@ -23,9 +23,9 @@ echo "##### START ######################################"
 	call_create_client_scope $HST $AC_TOKEN $MY_REALM "soccer.player"
 	JSON_SCP=$(call_get_client_scopes $HST $AC_TOKEN $MY_REALM)
 
-	call_create_client $HST $AC_TOKEN $MY_REALM "my-web-app" "http://localhost:8222/*" false
-	call_create_client $HST $AC_TOKEN $MY_REALM "app-baseball" "http://localhost:8222/*" true
-	call_create_client $HST $AC_TOKEN $MY_REALM "app-soccer" "http://localhost:8222/*" true
+	call_create_client $HST $AC_TOKEN $MY_REALM "my-web-app" "http://localhost:8222/*,http://localhost:8333/*" false
+	call_create_client $HST $AC_TOKEN $MY_REALM "app-baseball" "http://localhost:8222/*,http://localhost:8333/*" true
+	call_create_client $HST $AC_TOKEN $MY_REALM "app-soccer" "http://localhost:8222/*,http://localhost:8333/*" true
 	JSON_CLT=$(call_get_clients $HST $AC_TOKEN $MY_REALM)
 
 	run_assing_def_client_scope_to_client \

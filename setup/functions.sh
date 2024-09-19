@@ -38,7 +38,7 @@ call_create_realm()
 }
 # }}}
 
-# {{{ call_realms()
+# {{{ call_get_realms()
 # $1: Admin REST API Host
 # $2: access token
 call_get_realms()
@@ -93,12 +93,15 @@ call_get_client_scopes()
 # $6: flag of 'consentRequired'
 call_create_client()
 {
+	REDIRCT=$(echo $5 | sed -e 's/,/","/g')
 	WEB_ORG=$(echo $5 | sed -E 's/^.*(http|https)(:\/\/)([^/]+).*/\1\2\3/g')
+	JSON="{\"clientId\": \"$4\", \"enabled\": true, \"secret\": \"my-secret\", \"redirectUris\": [\"$REDIRCT\"], \"webOrigins\": [\"$WEB_ORG\"], \"publicClient\": false, \"consentRequired\": $6, \"fullScopeAllowed\": true}"
+
 	curl -v POST \
 		"$1/admin/realms/$3/clients" \
 		-H "Authorization: Bearer $2" \
 		-H "Content-Type: application/json" \
-		-d "{\"clientId\": \"$4\", \"enabled\": true, \"secret\": \"my-secret\", \"redirectUris\": [\"$5\"], \"webOrigins\": [\"$WEB_ORG\"], \"publicClient\": false, \"consentRequired\": $6, \"fullScopeAllowed\": true}"
+		-d "$JSON"
 }
 # }}}
 
