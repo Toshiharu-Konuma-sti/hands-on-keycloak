@@ -120,6 +120,8 @@ p.windowtitle {
 </head>
 <body>
 
+<div th:replace="~{apps/include/header}">header</div>
+
 <header>
 <div>In this app, we will check the mechanism between Relying Party and Resource Server using Access Token.</div>
 <h1 th:text="'OAuth 2.0: apps/' + ${appType}">apps/index</h1>
