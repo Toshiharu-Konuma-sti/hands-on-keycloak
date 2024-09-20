@@ -1,0 +1,13 @@
+
+<form method="POST" name="frm_auth" th:action="${curUrl}">
+	<input type="hidden" name="client_id" th:value="${clientId}">
+	<input type="hidden" name="client_secret" th:value="${clientSecret}">
+	<input type="hidden" name="auth_code" th:value="${auth_code}" id="auth-code">
+	<input type="hidden" name="access_token" th:value="${access_token}" id="access-token">
+	<input type="hidden" name="refresh_token" th:value="${refresh_token}" id="refresh-token">
+	<input type="hidden" name="id_token" th:value="${id_token}" id="id-token">
+	<input type="hidden" name="token_type" th:value="${token_type}">
+	<input type="hidden" name="expires_in" th:value="${expires_in}">
+</form>
+
+

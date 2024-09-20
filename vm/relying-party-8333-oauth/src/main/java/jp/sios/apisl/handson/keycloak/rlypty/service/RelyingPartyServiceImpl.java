@@ -118,52 +118,6 @@ public class RelyingPartyServiceImpl implements RelyingPartyService
 	}
 	// }}}
 
-	private void packRoleAndScope(ModelAndView model)
-	{
-		String scope = null;
-		String roles = null;
-		String ac_token = (String) model.getModel().get("access_token");
-
-		if (ac_token != null) {
-			String[] ac_part = ac_token.split("\\.");
-			Base64.Decoder decoder = Base64.getDecoder();
-			String decoded = new String(decoder.decode(ac_part[1].getBytes(StandardCharsets.UTF_8)));
-
-			try {
-				ObjectMapper  objectMapper = new ObjectMapper();
-				JsonNode json = objectMapper.readTree(decoded);
-
-				scope = json.get("scope").textValue();
-
-				Iterator<JsonNode> realmRole = json.get("realm_access").get("roles").elements();
-				Iterator<JsonNode> resrcRole = json.get("resource_access").get("account").get("roles").elements();
-				roles = this.lineupRoles(roles, realmRole);
-				roles = this.lineupRoles(roles, resrcRole);
-
-			} catch (JsonProcessingException e) {
-				e.printStackTrace();
-			}
-		}
-		model.addObject("actokenScope", scope);
-		model.addObject("actokenRoles", roles);
-
-		return;
-	}
-
-	private String lineupRoles(String line, Iterator<JsonNode> roles)
-	{
-		while (roles.hasNext()) {
-			if (line == null) {
-				line = "";
-			} else
-			if (line.equals("") == false) {
-				line += ", ";
-			}
-			line += roles.next().textValue();
-		}
-		return line;
-	}
-
 	// {{{ private void packTokenValues(...)
 	private void packTokenValues(
 			ModelAndView model, String auth_code,
@@ -175,10 +129,54 @@ public class RelyingPartyServiceImpl implements RelyingPartyService
 		model.addObject("access_token", access_token);
 		model.addObject("refresh_token", refresh_token);
 		model.addObject("id_token", id_token);
-		model.addObject("token_type", token_type);
-		model.addObject("expires_in", expires_in);
+		model.addObject("acTokenType", token_type);
+		model.addObject("acTokenExpiresIn", expires_in);
 
 		return;
+	}
+	// }}}
+
+	// {{{ private void packRoleAndScope(ModelAndView model)
+	private void packRoleAndScope(ModelAndView model)
+	{
+		List<String> roles = new ArrayList<>();
+		List<String> scopes = new ArrayList<>();
+		String ac_token = (String) model.getModel().get("access_token");
+
+		if (ac_token != null) {
+			String[] ac_part = ac_token.split("\\.");
+			Base64.Decoder decoder = Base64.getDecoder();
+			String decoded = new String(decoder.decode(ac_part[1].getBytes(StandardCharsets.UTF_8)));
+
+			try {
+				ObjectMapper  objectMapper = new ObjectMapper();
+				JsonNode json = objectMapper.readTree(decoded);
+
+				Iterator<JsonNode> realmRole = json.get("realm_access").get("roles").elements();
+				Iterator<JsonNode> resrcRole = json.get("resource_access").get("account").get("roles").elements();
+				roles = this.addRoleList(roles, realmRole);
+				roles = this.addRoleList(roles, resrcRole);
+
+				scopes = Arrays.asList(json.get("scope").textValue().split(" "));
+
+			} catch (JsonProcessingException e) {
+				e.printStackTrace();
+			}
+		}
+		model.addObject("acTokenRoles", roles);
+		model.addObject("acTokenScopes", scopes);
+
+		return;
+	}
+	// }}}
+
+	// {{{ private List<String> addRoleList(List<String> list, Iterator<JsonNode> roles)
+	private List<String> addRoleList(List<String> list, Iterator<JsonNode> roles)
+	{
+		while (roles.hasNext()) {
+			list.add(roles.next().textValue());
+		}
+		return list;
 	}
 	// }}}
 

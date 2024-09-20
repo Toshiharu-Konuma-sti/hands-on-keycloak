@@ -1,16 +1,14 @@
 
 <script type="text/javascript">
-/*
 function logout()
 {
 	let link = document.getElementById('link-rf-token');
 	if (link !== null) {
 		link.removeAttribute('href');
 	}
-	document.frm_oidc.action = document.getElementById('logout-url').value;
-	document.frm_oidc.submit();
+	document.frm_auth.action = document.getElementById('logout-url').value;
+	document.frm_auth.submit();
 }
-*/
 function submitCallApi(path)
 {
 	document.getElementById('api-path').value = path;

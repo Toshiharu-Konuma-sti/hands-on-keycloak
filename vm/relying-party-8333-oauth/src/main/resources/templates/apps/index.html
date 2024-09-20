@@ -1,245 +1,32 @@
 <html>
 <head>
-<style type="text/css">
-header h1 {
-	margin-top: 0px;
-	margin-bottom: 5px;
-}
-header div {
-	font-size: 0.75rem;
-}
-ul {
-	margin-top: 5px;
-	margin-bottom: 5px;
-}
-li {
-	white-space: nowrap;
-}
-footer {
-	text-align: center;
-}
-table {
-	font-size: 0.8rem;
-	border: 1px solid;
-}
-#tbl-api {
-	margin-left: 25px;
-	margin-bottom: 5px;
-}
-#tbl-api th {
-	background-color: antiquewhite;
-}
-#tbl-token {
-	width: 100%;
-}
-#tbl-token td {
-	border: 1px solid;
-}
-#tbl-token .wide-y2 td {
-	height: 3.0em;
-}
-#tbl-token .wide-y4 td {
-	height: 6.0em;
-}
-#tbl-token .rowkey {
-	white-space: nowrap;
-	width: 5%;
-}
-#tbl-token .rowval {
-	width: 45%;
-}
-#tbl-token .rowval-lot {
-	vertical-align: middle;
-	word-break: break-all;
-	height: 100%;
-	overflow-y: auto;
-}
-#ifrm-api {
-	border: 0px;
-	width: 100%;
-	height: 16.5em;
-}
-.menu-title {
-	white-space: nowrap;
-}
-.window {
-	border: 1px solid;
-	border-radius: 5px;
-	box-shadow: 6px 6px 10px 0px rgba(0, 0, 0, 0.4);
-	margin-bottom: 10px;
-}
-.titlebar {
-	font-size: 0.8rem;
-	background: #e1e1e1;
-	border-bottom: 1px solid #b6b6b6;
-	border-radius: 5px 5px 0 0;
-	display: flex;
-}
-p.windowtitle {
-	font-size: 0.8rem;
-	width: 100%;
-	text-align: center;
-	cursor: default;
-	margin: 0px;
-}
-.buttons {
-	display: flex;
-	align-items: center;
-	margin-left: 5px;
-}
-.buttons div{
-	width: 10px;
-	height: 10px;
-	border-radius: 50%;
-	margin: 0 3px;
-}
-.buttons .close{
-	background: #ff5f57;
-	border: 1px solid #e45952;
-}
-.buttons .hide{
-	background: #ffbd2d;
-	border: 1px solid #e1a73e;
-}
-.buttons .full{
-	background: #27c93f;
-	border: 1px solid #2bac2d;
-}
-
-.menu {
-	margin-right: 8px;
-}
-.content {
-	width: 100%;
-}
-.main {
-	display: flex;
-}
-
-</style>
+<style th:replace="~{apps/include/style-css}"></style>
 </head>
 <body>
 
-<div th:replace="~{apps/include/header}">header</div>
-
-<header>
-<div>In this app, we will check the mechanism between Relying Party and Resource Server using Access Token.</div>
-<h1 th:text="'OAuth 2.0: apps/' + ${appType}">apps/index</h1>
-</header>
+<div th:replace="~{apps/include/header-auth}">header</div>
 
 <div class="main">
-
-<div class="menu">
-
-<div class="menu-title">1. Here is the "<span th:text="${clientId}">index</span>" client!:</div>
-<ul>
-<li>Go to <a href="/apps/baseball">baseball</a> client.<br>(plus <a href="/apps/baseball-manager">manager</a> privilege.)</li>
-<li>Go to <a href="/apps/soccer">soccer</a> cliene.<br>(plus <a href="/apps/soccer-manager">manager</a> privilege.)</li>
-</ul>
-
-<div class="menu-title">2. Operate Access Token:</div>
-<ul>
-<li><a th:href="${authUrl}">Get Access Token</a></li>
-<li><th:block th:unless="${#strings.isEmpty(refresh_token)}"><a id="link-rf-token" href="javascript: document.frm_oidc.submit();"></th:block>Refresh Access Token<th:block th:unless="${#strings.isEmpty(refresh_token)}"></a></th:block></li>
-<li><a href="javascript: logout();">Logout of Keycloak</a></li>
-<li><a th:href="${curUrl}">Reset</a></li>
-</ul>
-
-<div class="menu-title">3. Call API with Access Token:</div>
-<table id="tbl-api">
-<tr><th colspan="4">Resource Server</th></tr>
-<tr><td>/<a href="javascript: submitCallApi('/apis');">apis</a></td><td></td><td></td><td></td></tr>
-<tr><td>`----</td><td>/<a href="javascript: submitCallApi('/apis/sports');">sports</a></td><td></td><td></td></tr>
-<tr><td></td><td>|------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball');">baseball</a></td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball/managers');">managers</a></td></tr>
-<tr><td></td><td>|</td><td>`--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball/players');">players</a></td></tr>
-<tr><td></td><td>`------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer');">soccer</a></td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer/managers');">managers</a></td></tr>
-<tr><td></td><td></td><td>`--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer/players');">players</a></td></tr>
-<tr><th colspan="4">Id Provider</th></tr>
-<tr><td colspan="4">/<a href="javascript: submitCallApi('/userinfo');">userinfo_endpoint</a></td></tr>
-</table>
-
-<div class="menu-title">- Reference:</div>
-<ul>
-<li><a href="https://jwt.io/" target="_blank" rel="noreferrer noopener">JSON Web Tokens</a></li>
-</ul>
-
-</div>
-
-<div class="content">
-
-<table id="tbl-token">
-<tr class="wide-y4">
-  <td class="rowkey">Auth Code<br><button type="button" onclick="copyHidden('auth-code');">copy</button></td><td class="rowval"><div class="rowval-lot" th:text="${auth_code}"></div></td>
-    <td class="rowkey">ID Token<br><button type="button" onclick="copyHidden('id-token');">copy</button></td><td class="rowval"><div class="rowval-lot" th:text="${id_token}"></div></td></tr>
-<tr class="wide-y4">
-  <td class="rowkey">Access Token<br><button type="button" onclick="copyHidden('access-token');">copy</button></td><td class="rowval"><div class="rowval-lot" th:text="${access_token}"></div></td>
-    <td class="rowkey">Refresh Token<br><button type="button" onclick="copyHidden('refresh-token');">copy</button></td><td class="rowval"><div class="rowval-lot" th:text="${refresh_token}"></div></td></tr>
-<tr>
-  <td class="rowkey">Token Type</td><td class="rowval"><div class="" th:text="${token_type}"></div></td>
-    <td class="rowkey">Expires In</td><td class="rowval"><div class="" th:text="${expires_in}"></div></td></tr>
-<tr class="wide-y2">
-  <td class="rowkey">Roles</td><td class="rowval"><div class="rowval-lot" th:text="${actokenRoles}"></div></td>
-    <td class="rowkey">Scope</td><td class="rowval"><div class="rowval-lot" th:text="${actokenScope}"></div></td></tr>
-</table>
-
-<input type="hidden" id="logout-url" th:value="${logoutUrl}">
-<form method="POST" name="frm_oidc" th:action="${curUrl}">
-	<input type="hidden" name="client_id" th:value="${clientId}">
-	<input type="hidden" name="client_secret" th:value="${clientSecret}">
-	<input type="hidden" name="auth_code" th:value="${auth_code}" id="auth-code">
-	<input type="hidden" name="access_token" th:value="${access_token}" id="access-token">
-	<input type="hidden" name="refresh_token" th:value="${refresh_token}" id="refresh-token">
-	<input type="hidden" name="id_token" th:value="${id_token}" id="id-token">
-	<input type="hidden" name="token_type" th:value="${token_type}">
-	<input type="hidden" name="expires_in" th:value="${expires_in}">
-</form>
-
-<form method="GET" name="frm_api" action="./broker" target="ifrm_api">
-	<input type="hidden" name="api_path" id="api-path" value="">
-	<input type="hidden" name="access_token" th:value="${access_token}">
-</form>
-
-<div class="window">
-  <div class="titlebar">
-    <div class="buttons">
-      <div class="close"></div>
-      <div class="hide"></div>
-      <div class="full"></div>
-    </div>
-    <p class="windowtitle">The result of calling API</p>
+  <div class="menu">
+    <div th:replace="~{apps/include/list-client-auth}">list</div>
+    <div th:replace="~{apps/include/list-token-auth}">list</div>
+    <div th:replace="~{apps/include/table-api}">table</div>
+    <div th:replace="~{apps/include/list-reference}">list</div>
   </div>
-  <iframe name="ifrm_api" id="ifrm-api" src="./broker"></iframe>
+  <div class="content">
+    <div th:replace="~{apps/include/table-token}">table</div>
+    <div class="result">
+      <div th:replace="~{apps/include/table-role-scope}">role&scope</div>
+      <div th:replace="~{apps/include/ifrm-result}">iframe</div>
+    </div>
+    <div th:replace="~{apps/include/footer}">footer</div>
+    <div th:replace="~{apps/include/form-api}">form</div>
+    <div th:replace="~{apps/include/form-auth}">form</div>
+    <div th:replace="~{apps/include/hidden}">hidden</div>
+  </div>
 </div>
 
-<footer>(c) SIOS Technology, Inc.</footer>
-
-</div>
-
-</div>
-
-<script type="text/javascript">
-function logout()
-{
-	let link = document.getElementById('link-rf-token');
-	if (link !== null) {
-		link.removeAttribute('href');
-	}
-	document.frm_oidc.action = document.getElementById('logout-url').value;
-	document.frm_oidc.submit();
-}
-function submitCallApi(path)
-{
-	document.getElementById('api-path').value = path;
-	frm_api.submit();
-}
-function copyHidden(id)
-{
-	var elem = document.getElementById(id);
-	if (elem.value != '') {
-		navigator.clipboard.writeText(elem.value);
-	}
-}
-</script>
+<script th:replace="~{apps/include/script}"></script>
 
 </body>
 </html>
