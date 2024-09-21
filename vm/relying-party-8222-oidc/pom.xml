@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>jp.sios</groupId>
-	<artifactId>apisl.handson.keycloak.rp.openid</artifactId>
+	<artifactId>apisl.handson.keycloak.rp.oidc</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>apisl.handson.keycloak.rp.openid</name>
+	<name>apisl.handson.keycloak.rp.oidc</name>
 	<description>Demo project for Spring Boot</description>
 	<url/>
 	<licenses>

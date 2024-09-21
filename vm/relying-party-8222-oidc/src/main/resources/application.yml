@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: apisl.handson.keycloak.rp.openid
+    name: apisl.handson.keycloak.rp.oidc
   security:
     oauth2:
       client:

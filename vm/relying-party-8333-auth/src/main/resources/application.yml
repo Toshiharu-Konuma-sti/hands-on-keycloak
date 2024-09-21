@@ -1,0 +1,25 @@
+server:
+  port: 8333
+
+spring:
+  application:
+    name: apisl.handson.keycloak.rp.auth
+
+handson:
+  relying-party:
+    api-server:
+      host: http://localhost:8111
+    openid:
+      config-uri: http://localhost:8080/realms/handson/.well-known/openid-configuration
+      client:
+        app-baseball:
+          secret: my-secret
+        app-soccer:
+          secret: my-secret
+
+logging:
+  level:
+    root: FATAL
+    org:
+      springframework:
+        security: TRACE
