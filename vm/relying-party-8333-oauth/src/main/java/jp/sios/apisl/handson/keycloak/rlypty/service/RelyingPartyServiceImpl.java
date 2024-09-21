@@ -145,22 +145,28 @@ public class RelyingPartyServiceImpl implements RelyingPartyService
 
 		if (ac_token != null) {
 			String[] ac_part = ac_token.split("\\.");
-			Base64.Decoder decoder = Base64.getDecoder();
-			String decoded = new String(decoder.decode(ac_part[1].getBytes(StandardCharsets.UTF_8)));
+			if (ac_part.length > 1) {
 
-			try {
-				ObjectMapper  objectMapper = new ObjectMapper();
-				JsonNode json = objectMapper.readTree(decoded);
+				String payload = ac_part[1].replaceAll("-", "+").replaceAll("_", "/");
+				Base64.Decoder decoder = Base64.getDecoder();
+				String decoded = new String(decoder.decode(payload.getBytes(StandardCharsets.UTF_8)));
 
-				Iterator<JsonNode> realmRole = json.get("realm_access").get("roles").elements();
-				Iterator<JsonNode> resrcRole = json.get("resource_access").get("account").get("roles").elements();
-				roles = this.addRoleList(roles, realmRole);
-				roles = this.addRoleList(roles, resrcRole);
+				try {
 
-				scopes = Arrays.asList(json.get("scope").textValue().split(" "));
+					ObjectMapper  objectMapper = new ObjectMapper();
+					JsonNode json = objectMapper.readTree(decoded);
 
-			} catch (JsonProcessingException e) {
-				e.printStackTrace();
+					Iterator<JsonNode> realmRole = json.get("realm_access").get("roles").elements();
+					Iterator<JsonNode> resrcRole = json.get("resource_access").get("account").get("roles").elements();
+					roles = this.addRoleList(roles, realmRole);
+					roles = this.addRoleList(roles, resrcRole);
+
+					scopes = Arrays.asList(json.get("scope").textValue().split(" "));
+
+//				} catch (IllegalArgumentException | JsonProcessingException e) {
+				} catch (JsonProcessingException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 		model.addObject("acTokenRoles", roles);
