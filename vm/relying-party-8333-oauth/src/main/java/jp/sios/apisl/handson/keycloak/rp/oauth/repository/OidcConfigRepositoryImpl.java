@@ -1,10 +1,10 @@
-package jp.sios.apisl.handson.keycloak.rlypty.repository;
+package jp.sios.apisl.handson.keycloak.rp.oauth.repository;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.client.RestTemplate;
-import jp.sios.apisl.handson.keycloak.rlypty.entity.OidcConfigResponse;
+import jp.sios.apisl.handson.keycloak.rp.oauth.entity.OidcConfigResponse;
 
 /**
  * OpenID Connect Configuration Repository Implement Class

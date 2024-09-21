@@ -1,4 +1,4 @@
-package jp.sios.apisl.handson.keycloak.rlypty.entity;
+package jp.sios.apisl.handson.keycloak.rp.oauth.entity;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,4 +1,4 @@
-package jp.sios.apisl.handson.keycloak.rlypty.controller;
+package jp.sios.apisl.handson.keycloak.rp.oauth.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
-import jp.sios.apisl.handson.keycloak.rlypty.service.RelyingPartyService;
+import jp.sios.apisl.handson.keycloak.rp.oauth.service.RelyingPartyService;
 
 @Controller
 public class RelyingPartyController {

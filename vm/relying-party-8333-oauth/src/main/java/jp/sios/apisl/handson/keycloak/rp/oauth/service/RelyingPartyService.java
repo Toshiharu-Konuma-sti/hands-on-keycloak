@@ -1,4 +1,4 @@
-package jp.sios.apisl.handson.keycloak.rlypty.service;
+package jp.sios.apisl.handson.keycloak.rp.oauth.service;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.servlet.ModelAndView;

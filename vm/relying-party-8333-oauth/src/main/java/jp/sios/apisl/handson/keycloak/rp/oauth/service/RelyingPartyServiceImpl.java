@@ -1,4 +1,4 @@
-package jp.sios.apisl.handson.keycloak.rlypty.service;
+package jp.sios.apisl.handson.keycloak.rp.oauth.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,10 +22,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.ModelAndView;
-import jp.sios.apisl.handson.keycloak.rlypty.entity.OidcConfigResponse;
-import jp.sios.apisl.handson.keycloak.rlypty.entity.OidcTokenResponse;
-import jp.sios.apisl.handson.keycloak.rlypty.repository.OidcConfigRepository;
-import jp.sios.apisl.handson.keycloak.rlypty.repository.OidcTokenRepository;
+import jp.sios.apisl.handson.keycloak.rp.oauth.entity.OidcConfigResponse;
+import jp.sios.apisl.handson.keycloak.rp.oauth.entity.OidcTokenResponse;
+import jp.sios.apisl.handson.keycloak.rp.oauth.repository.OidcConfigRepository;
+import jp.sios.apisl.handson.keycloak.rp.oauth.repository.OidcTokenRepository;
 
 /**
  *

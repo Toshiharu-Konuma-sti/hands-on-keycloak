@@ -1,4 +1,4 @@
-package jp.sios.apisl.handson.keycloak.rlypty;
+package jp.sios.apisl.handson.keycloak.rp.oauth;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

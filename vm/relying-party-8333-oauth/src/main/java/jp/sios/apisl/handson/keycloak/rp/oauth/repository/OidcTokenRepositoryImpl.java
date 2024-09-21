@@ -1,11 +1,11 @@
-package jp.sios.apisl.handson.keycloak.rlypty.repository;
+package jp.sios.apisl.handson.keycloak.rp.oauth.repository;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-import jp.sios.apisl.handson.keycloak.rlypty.entity.OidcTokenResponse;
+import jp.sios.apisl.handson.keycloak.rp.oauth.entity.OidcTokenResponse;
 
 /**
  * OpenID Connect Token Repository Implement Class

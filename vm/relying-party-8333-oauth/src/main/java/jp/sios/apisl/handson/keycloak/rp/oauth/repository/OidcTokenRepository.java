@@ -1,6 +1,6 @@
-package jp.sios.apisl.handson.keycloak.rlypty.repository;
+package jp.sios.apisl.handson.keycloak.rp.oauth.repository;
 
-import jp.sios.apisl.handson.keycloak.rlypty.entity.OidcTokenResponse;
+import jp.sios.apisl.handson.keycloak.rp.oauth.entity.OidcTokenResponse;
 
 /**
  * OpenID Connect Token Repository Interface
