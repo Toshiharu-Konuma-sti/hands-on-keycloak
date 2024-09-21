@@ -88,25 +88,29 @@ public class OAuth2LoginSecurityConfiguration {
 		ArrayList<String> roles = new ArrayList<String>();
 
 		String[] tokenPart = accessToken.split("\\.");
-		Base64.Decoder decoder = Base64.getDecoder();
-		String decoded = new String(decoder.decode(tokenPart[1].getBytes(StandardCharsets.UTF_8)));
+		if (tokenPart.length > 1) {
 
-		try {
-			ObjectMapper  objectMapper = new ObjectMapper();
-			JsonNode json = objectMapper.readTree(decoded);
-			if ((json.get("realm_access") != null) &&
-			    (json.get("realm_access").get("roles") != null)) {
-				Iterator<JsonNode> realmRole = json.get("realm_access").get("roles").elements();
-				roles.addAll(this.convJsonToList(realmRole));
+			String payload = tokenPart[1].replaceAll("-", "+").replaceAll("_", "/");
+			Base64.Decoder decoder = Base64.getDecoder();
+			String decoded = new String(decoder.decode(payload.getBytes(StandardCharsets.UTF_8)));
+
+			try {
+				ObjectMapper  objectMapper = new ObjectMapper();
+				JsonNode json = objectMapper.readTree(decoded);
+				if ((json.get("realm_access") != null) &&
+				    (json.get("realm_access").get("roles") != null)) {
+					Iterator<JsonNode> realmRole = json.get("realm_access").get("roles").elements();
+					roles.addAll(this.convJsonToList(realmRole));
+				}
+				if ((json.get("resource_access") != null) &&
+				    (json.get("resource_access").get("account") != null) &&
+				    (json.get("resource_access").get("account").get("roles") != null)) {
+					Iterator<JsonNode> resrcRole = json.get("resource_access").get("account").get("roles").elements();
+					roles.addAll(this.convJsonToList(resrcRole));
+				}
+			} catch (JsonProcessingException e) {
+				e.printStackTrace();
 			}
-			if ((json.get("resource_access") != null) &&
-			    (json.get("resource_access").get("account") != null) &&
-			    (json.get("resource_access").get("account").get("roles") != null)) {
-				Iterator<JsonNode> resrcRole = json.get("resource_access").get("account").get("roles").elements();
-				roles.addAll(this.convJsonToList(resrcRole));
-			}
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
 		}
 
 		return roles;
