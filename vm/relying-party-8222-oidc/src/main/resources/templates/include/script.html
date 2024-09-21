@@ -1,0 +1,25 @@
+
+<script type="text/javascript">
+function logout()
+{
+	let link = document.getElementById('link-rf-token');
+	if (link !== null) {
+		link.removeAttribute('href');
+	}
+	document.frm_auth.action = document.getElementById('logout-url').value;
+	document.frm_auth.submit();
+}
+function submitCallApi(path)
+{
+	document.getElementById('api-path').value = path;
+	frm_api.submit();
+}
+function copyHidden(id)
+{
+	var elem = document.getElementById(id);
+	if (elem.value != '') {
+		navigator.clipboard.writeText(elem.value);
+	}
+}
+</script>
+
