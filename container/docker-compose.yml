@@ -10,7 +10,7 @@ services:
       KEYCLOAK_ADMIN: ${KC_ADM_USER}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADM_PASS}
     networks:
-      - hnet
+      - external
     ports:
       - 8080:8080
     healthcheck:
@@ -24,7 +24,7 @@ services:
     container_name: ressvr
     image: eclipse-temurin:21
     networks:
-      - hnet
+      - external
     ports:
       - 8111:8111
     volumes:
@@ -37,7 +37,7 @@ services:
         condition: service_healthy
 
 networks:
-  hnet:
+  external:
     name: hands-net
     driver: bridge
 
