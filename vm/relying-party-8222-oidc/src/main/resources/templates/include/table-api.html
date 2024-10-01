@@ -4,13 +4,13 @@
 <tr><th colspan="5">Resource Server</th><th th:if="${isOidc}">-</th></tr>
 <tr><td>/<a href="javascript: submitCallApi('/');">(root)</a></td><td></td><td></td><td></td><td></td><td th:if="${isOidc}"><span>O</span></td></tr>
 <tr><td>`------</td><td>/<a href="javascript: submitCallApi('/apis');">apis</a></td><td></td><td></td><td></td><td th:if="${isOidc}"><span sec:authorize="isAuthenticated()">O</span></td></tr>
-<tr><td></td><td>`----</td><td>/<a href="javascript: submitCallApi('/apis/sports');">sports</a></td><td></td><td></td><td th:if="${isOidc}"><span sec:authorize="hasAnyAuthority('SCOPE_baseball.player', 'SCOPE_soccer.player')">O</span></td></tr>
-<tr><td></td><td></td><td>|------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball');">baseball</a></td><td></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_baseball.player')">O</span></td></tr>
-<tr><td></td><td></td><td>|</td><td>|--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball/managers');">managers</a></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_baseball.manager')">O</span></td></tr>
-<tr><td></td><td></td><td>|</td><td>`--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball/players');">players</a></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_baseball.player')">O</span></td></tr>
-<tr><td></td><td></td><td>`------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer');">soccer</a></td><td></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_soccer.player')">O</span></td></tr>
-<tr><td></td><td></td><td></td><td>|--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer/managers');">managers</a></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_soccer.manager')">O</span></td></tr>
-<tr><td></td><td></td><td></td><td>`--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer/players');">players</a></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_soccer.player')">O</span></td></tr>
+<tr><td></td><td>`----</td><td>/<a href="javascript: submitCallApi('/apis/sports');">sports</a></td><td></td><td></td><td th:if="${isOidc}"><span sec:authorize="hasAnyAuthority('SCOPE_read:baseball.player', 'SCOPE_read:soccer.player')">O</span></td></tr>
+<tr><td></td><td></td><td>|------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball');">baseball</a></td><td></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_read:baseball.player')">O</span></td></tr>
+<tr><td></td><td></td><td>|</td><td>|--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball/managers');">managers</a></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_read:baseball.manager')">O</span></td></tr>
+<tr><td></td><td></td><td>|</td><td>`--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/baseball/players');">players</a></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_read:baseball.player')">O</span></td></tr>
+<tr><td></td><td></td><td>`------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer');">soccer</a></td><td></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_read:soccer.player')">O</span></td></tr>
+<tr><td></td><td></td><td></td><td>|--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer/managers');">managers</a></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_read:soccer.manager')">O</span></td></tr>
+<tr><td></td><td></td><td></td><td>`--------</td><td>/<a href="javascript: submitCallApi('/apis/sports/soccer/players');">players</a></td><td th:if="${isOidc}"><span sec:authorize="hasAuthority('SCOPE_read:soccer.player')">O</span></td></tr>
 <tr><th colspan="5">Id Provider</th><th th:if="${isOidc}">-</th></tr>
 <tr><td colspan="5">/<a href="javascript: submitCallApi('/userinfo');">userinfo_endpoint</a></td><td th:if="${isOidc}"><span sec:authorize="isAuthenticated()">O</span></td></tr>
 </table>

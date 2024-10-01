@@ -19,7 +19,7 @@ spring:
             client-name: Baseball as a Manager!!!
             client-id: app-baseball
             client-secret: my-secret
-            scope: openid, baseball.manager
+            scope: openid, read:baseball.manager
           kc-soccer-ply:
             provider: keycloak
             client-name: Soccer as a Player!!!
@@ -31,7 +31,7 @@ spring:
             client-name: Soccer as a Manager!!!
             client-id: app-soccer
             client-secret: my-secret
-            scope: openid, soccer.manager
+            scope: openid, read:soccer.manager
         provider:
           keycloak:
             issuer-uri: http://localhost:8080/realms/handson
