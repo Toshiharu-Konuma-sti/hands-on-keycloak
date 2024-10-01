@@ -191,7 +191,7 @@ public class RelyingPartyServiceImpl implements RelyingPartyService
 	{
 		List<String> scopes = new ArrayList<String>(Arrays.asList("openid"));
 		if (appType.endsWith("-manager")) {
-			scopes.add(appType.replaceAll("-.*", "") + ".manager");
+			scopes.add("read:" + appType.replaceAll("-.*", "") + ".manager");
 		}
 		String url = resp.getAuthorization_endpoint()
 			+ "?scope=" + String.join("+", scopes)
