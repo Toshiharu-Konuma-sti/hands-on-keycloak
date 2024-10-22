@@ -75,7 +75,7 @@ echo "##### START ######################################"
 	call_create_user $HST $AC_TOKEN $MY_REALM $USER_NM $USER_NM
 	USER_NM="staff.sios"
 	call_create_user $HST $AC_TOKEN $MY_REALM $USER_NM $USER_NM
-	USER_NM="flat.sios"
+	USER_NM="taro.sios"
 	call_create_user $HST $AC_TOKEN $MY_REALM $USER_NM $USER_NM
 	JSON_USR=$(call_get_users $HST $AC_TOKEN $MY_REALM)
 
@@ -84,7 +84,7 @@ echo "##### START ######################################"
 	run_assing_user_to_group \
 		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-staff-grp" "staff.sios"
 	run_assing_user_to_group \
-		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-flat-grp" "flat.sios"
+		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-flat-grp" "taro.sios"
 
 
 echo "\n##### FINISH #####################################"
