@@ -121,6 +121,35 @@ call_get_clients()
 }
 # }}}
 
+# {{{ call_map_client_scope_audience()
+# $1: Admin REST API Host
+# $2: access token
+# $3: realm's name
+# $4: client scope's id to map an audience
+# $5: client's name as an audience
+call_map_client_scope_audience()
+{
+	curl -v -X POST \
+		"$1/admin/realms/$3/client-scopes/$4/protocol-mappers/add-models" \
+		-H "Authorization: Bearer $2" \
+		-H "Content-Type: application/json" \
+		-d "[{\"name\": \"mapper-$5\", \"protocol\": \"openid-connect\", \"protocolMapper\": \"oidc-audience-mapper\", \"config\": {\"included.client.audience\": \"$5\", \"access.token.claim\": \"true\"}}]"
+}
+# }}}
+
+# {{{ call_get_client_scope_audience()
+# $1: Admin REST API Host
+# $2: access token
+# $3: realm's name
+# $4: client scope's id to show an audience
+call_get_client_scope_audience()
+{
+	curl -v \
+		"$1/admin/realms/$3/client-scopes/$4/protocol-mappers/models" \
+		-H "Authorization: Bearer $2"
+}
+# }}}
+
 # {{{ call_assing_def_client_scope_to_client()
 # $1: Admin REST API Host
 # $2: access token
