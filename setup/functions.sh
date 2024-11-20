@@ -90,7 +90,7 @@ call_get_client_scopes()
 # $3: realm's name
 # $4: client id to create newlly
 # $5: redirect URL
-# $6: flag of 'consentRequired'
+# $6: flag of 'consentRequired' (This is a flag whether to display the consent screen or not.)
 call_create_client()
 {
 	REDIRCT=$(echo $5 | sed -e 's/,/","/g')
