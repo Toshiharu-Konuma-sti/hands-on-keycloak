@@ -1,8 +1,8 @@
 #!/bin/sh
 
 PATH_BASE_DIR="$(dirname $(pwd)/$0)/"
-. $PATH_BASE_DIR/functions.sh
-. $PATH_BASE_DIR/subroutines.sh
+. $PATH_BASE_DIR/call_kc_apis.sh
+. $PATH_BASE_DIR/comb_kc_apis.sh
 
 HST="http://localhost:8080"
 ADM_USER="admin"
