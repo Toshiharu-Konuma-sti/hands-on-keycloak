@@ -1,5 +1,19 @@
 #!/bin/sh
 
+clear
+S_TIME=$(date +%s)
+CUR_DIR=$(cd $(dirname $0); pwd)
+
+echo "############################################################"
+echo "# START SCRIPT"
+echo "############################################################"
+
+$CUR_DIR/step01-create_realm.sh
+
+##########
+##########
+##########
+
 PATH_BASE_DIR="$(dirname $(pwd)/$0)/"
 . $PATH_BASE_DIR/call_kc_apis.sh
 . $PATH_BASE_DIR/comb_kc_apis.sh
@@ -14,7 +28,7 @@ echo "##### START ######################################"
 
 	AC_TOKEN=$(call_fetch_master_access_token $HST $ADM_USER $ADM_PASS)
 
-	call_create_realm $HST $AC_TOKEN $MY_REALM
+#	call_create_realm $HST $AC_TOKEN $MY_REALM
 
 	call_create_client_scope $HST $AC_TOKEN $MY_REALM "read:my-scope"
 	call_create_client_scope $HST $AC_TOKEN $MY_REALM "write:my-scope"
@@ -96,3 +110,14 @@ echo "##### START ######################################"
 
 
 echo "\n##### FINISH #####################################"
+
+##########
+##########
+##########
+
+E_TIME=$(date +%s)
+DURATION=$((E_TIME - S_TIME))
+
+echo "############################################################"
+echo "# FINISH SCRIPT ($DURATION seconds)"
+echo "############################################################"
