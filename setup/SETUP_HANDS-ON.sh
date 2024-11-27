@@ -9,6 +9,9 @@ echo "# START SCRIPT"
 echo "############################################################"
 
 $CUR_DIR/step01-create_realm.sh
+$CUR_DIR/step02-create_client_scope.sh
+$CUR_DIR/step03-create_client.sh
+$CUR_DIR/step04-map_audience_to_client_scope.sh
 
 ##########
 ##########
@@ -30,26 +33,26 @@ echo "##### START ######################################"
 
 #	call_create_realm $HST $AC_TOKEN $MY_REALM
 
-	call_create_client_scope $HST $AC_TOKEN $MY_REALM "read:my-scope"
-	call_create_client_scope $HST $AC_TOKEN $MY_REALM "write:my-scope"
-	call_create_client_scope $HST $AC_TOKEN $MY_REALM "read:baseball.manager"
-	call_create_client_scope $HST $AC_TOKEN $MY_REALM "read:baseball.player"
-	call_create_client_scope $HST $AC_TOKEN $MY_REALM "read:soccer.manager"
-	call_create_client_scope $HST $AC_TOKEN $MY_REALM "read:soccer.player"
+#	call_create_client_scope $HST $AC_TOKEN $MY_REALM "read:my-scope"
+#	call_create_client_scope $HST $AC_TOKEN $MY_REALM "write:my-scope"
+#	call_create_client_scope $HST $AC_TOKEN $MY_REALM "read:baseball.manager"
+#	call_create_client_scope $HST $AC_TOKEN $MY_REALM "read:baseball.player"
+#	call_create_client_scope $HST $AC_TOKEN $MY_REALM "read:soccer.manager"
+#	call_create_client_scope $HST $AC_TOKEN $MY_REALM "read:soccer.player"
 	JSON_SCP=$(call_get_client_scopes $HST $AC_TOKEN $MY_REALM)
 
-	call_create_client $HST $AC_TOKEN $MY_REALM "my-web-app" "http://localhost:8222/*,http://localhost:8333/*" false
-	call_create_client $HST $AC_TOKEN $MY_REALM "my-api-gateway" "" false
-	call_create_client $HST $AC_TOKEN $MY_REALM "app-baseball" "http://localhost:8222/*,http://localhost:8333/*" true
-	call_create_client $HST $AC_TOKEN $MY_REALM "app-soccer" "http://localhost:8222/*,http://localhost:8333/*" true
+#	call_create_client $HST $AC_TOKEN $MY_REALM "my-web-app" "http://localhost:8222/*,http://localhost:8333/*" false
+#	call_create_client $HST $AC_TOKEN $MY_REALM "my-api-gateway" "" false
+#	call_create_client $HST $AC_TOKEN $MY_REALM "app-baseball" "http://localhost:8222/*,http://localhost:8333/*" true
+#	call_create_client $HST $AC_TOKEN $MY_REALM "app-soccer" "http://localhost:8222/*,http://localhost:8333/*" true
 	JSON_CLT=$(call_get_clients $HST $AC_TOKEN $MY_REALM)
 
-	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:my-scope" "my-web-app"
-	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "write:my-scope" "my-web-app"
-	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:baseball.manager" "app-baseball"
-	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:baseball.player" "app-baseball"
-	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:soccer.manager" "app-soccer"
-	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:soccer.player" "app-soccer"
+#	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:my-scope" "my-web-app"
+#	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "write:my-scope" "my-web-app"
+#	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:baseball.manager" "app-baseball"
+#	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:baseball.player" "app-baseball"
+#	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:soccer.manager" "app-soccer"
+#	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:soccer.player" "app-soccer"
 
 	run_assing_def_client_scope_to_client \
 		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:my-scope"
