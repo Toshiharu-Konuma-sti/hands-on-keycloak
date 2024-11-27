@@ -17,8 +17,10 @@ USER_NM="admin.sios"
 PASSWD=$USER_NM
 call_create_user $KC_URL $AC_TOKEN $MY_REALM $USER_NM $PASSWD
 USER_NM="staff.sios"
+PASSWD=$USER_NM
 call_create_user $KC_URL $AC_TOKEN $MY_REALM $USER_NM $PASSWD
 USER_NM="taro.sios"
+PASSWD=$USER_NM
 call_create_user $KC_URL $AC_TOKEN $MY_REALM $USER_NM $PASSWD
 
 echo "\n### START: Get users ##########"
