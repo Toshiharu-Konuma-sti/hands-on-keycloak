@@ -85,14 +85,14 @@ echo "##### START ######################################"
 #	call_create_realm_role $HST $AC_TOKEN $MY_REALM "my-staff-role"
 	JSON_ROL=$(call_get_realm_roles $HST $AC_TOKEN $MY_REALM)
 
-	run_assing_realm_role_to_group \
-		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-admin-grp" "my-admin-role"
-	run_assing_realm_role_to_group \
-		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-staff-grp" "my-staff-role"
-	run_assing_realm_role_to_group \
-		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-flat-grp" "my-admin-role"
-	run_assing_realm_role_to_group \
-		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-flat-grp" "my-staff-role"
+#	run_assing_realm_role_to_group \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-admin-grp" "my-admin-role"
+#	run_assing_realm_role_to_group \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-staff-grp" "my-staff-role"
+#	run_assing_realm_role_to_group \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-flat-grp" "my-admin-role"
+#	run_assing_realm_role_to_group \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-flat-grp" "my-staff-role"
 
 ##	call_enter_message "password of user to create"
 ##	PASSWD=$(call_enter_capture)
