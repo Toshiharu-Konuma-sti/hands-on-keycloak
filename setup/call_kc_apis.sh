@@ -121,13 +121,13 @@ call_get_clients()
 }
 # }}}
 
-# {{{ call_map_client_scope_audience()
+# {{{ call_assign_audience_to_client_scope()
 # $1: Admin REST API Host
 # $2: access token
 # $3: realm's name
 # $4: client scope's id to map an audience
 # $5: client's name as an audience
-call_map_client_scope_audience()
+call_assign_audience_to_client_scope()
 {
 	curl -v -X POST \
 		"$1/admin/realms/$3/client-scopes/$4/protocol-mappers/add-models" \

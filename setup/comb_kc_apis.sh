@@ -1,17 +1,17 @@
 
-# {{{ run_map_client_scope_audience()
+# {{{ run_assign_audience_to_client_scope()
 # $1: Admin REST API Host
 # $2: access token
 # $3: realm
 # $4: json of client scope
 # $5: client scope's name to map an audience
 # $6: client's name as an audience
-run_map_client_scope_audience()
+run_assign_audience_to_client_scope()
 {
 	SCP_NM=$5
 	SCP_ID=$(call_extract_id_from_json "$4" "name" $SCP_NM)
 	CLT_NM=$6
-	call_map_client_scope_audience $1 $2 $3 $SCP_ID $CLT_NM
+	call_assign_audience_to_client_scope $1 $2 $3 $SCP_ID $CLT_NM
 	call_get_client_scope_audience $1 $2 $3 $SCP_ID
 }
 # }}}
