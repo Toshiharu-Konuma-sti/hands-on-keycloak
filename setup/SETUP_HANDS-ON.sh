@@ -81,8 +81,8 @@ echo "##### START ######################################"
 #	call_create_group $HST $AC_TOKEN $MY_REALM "my-flat-grp"
 	JSON_GRP=$(call_get_groups $HST $AC_TOKEN $MY_REALM)
 
-	call_create_realm_role $HST $AC_TOKEN $MY_REALM "my-admin-role"
-	call_create_realm_role $HST $AC_TOKEN $MY_REALM "my-staff-role"
+#	call_create_realm_role $HST $AC_TOKEN $MY_REALM "my-admin-role"
+#	call_create_realm_role $HST $AC_TOKEN $MY_REALM "my-staff-role"
 	JSON_ROL=$(call_get_realm_roles $HST $AC_TOKEN $MY_REALM)
 
 	run_assing_realm_role_to_group \
