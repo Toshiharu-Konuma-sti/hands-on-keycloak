@@ -54,31 +54,31 @@ echo "##### START ######################################"
 #	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:soccer.manager" "app-soccer"
 #	run_map_client_scope_audience $HST $AC_TOKEN $MY_REALM "$JSON_SCP" "read:soccer.player" "app-soccer"
 
-	run_assing_def_client_scope_to_client \
-		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:my-scope"
-	run_assing_def_client_scope_to_client \
-		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "write:my-scope"
-	run_assing_def_client_scope_to_client \
-		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:baseball.manager"
-	run_assing_def_client_scope_to_client \
-		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:baseball.player"
-	run_assing_def_client_scope_to_client \
-		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:soccer.manager"
-	run_assing_def_client_scope_to_client \
-		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:soccer.player"
+#	run_assing_def_client_scope_to_client \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:my-scope"
+#	run_assing_def_client_scope_to_client \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "write:my-scope"
+#	run_assing_def_client_scope_to_client \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:baseball.manager"
+#	run_assing_def_client_scope_to_client \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:baseball.player"
+#	run_assing_def_client_scope_to_client \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:soccer.manager"
+#	run_assing_def_client_scope_to_client \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:soccer.player"
 
-	run_assing_opt_client_scope_to_client \
-		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-baseball" "read:baseball.manager"
-	run_assing_def_client_scope_to_client \
-		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-baseball" "read:baseball.player"
-	run_assing_opt_client_scope_to_client \
-		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-soccer" "read:soccer.manager"
-	run_assing_def_client_scope_to_client \
-		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-soccer" "read:soccer.player"
+#	run_assing_opt_client_scope_to_client \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-baseball" "read:baseball.manager"
+#	run_assing_def_client_scope_to_client \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-baseball" "read:baseball.player"
+#	run_assing_opt_client_scope_to_client \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-soccer" "read:soccer.manager"
+#	run_assing_def_client_scope_to_client \
+#		$HST $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-soccer" "read:soccer.player"
 
-	call_create_group $HST $AC_TOKEN $MY_REALM "my-admin-grp"
-	call_create_group $HST $AC_TOKEN $MY_REALM "my-staff-grp"
-	call_create_group $HST $AC_TOKEN $MY_REALM "my-flat-grp"
+#	call_create_group $HST $AC_TOKEN $MY_REALM "my-admin-grp"
+#	call_create_group $HST $AC_TOKEN $MY_REALM "my-staff-grp"
+#	call_create_group $HST $AC_TOKEN $MY_REALM "my-flat-grp"
 	JSON_GRP=$(call_get_groups $HST $AC_TOKEN $MY_REALM)
 
 	call_create_realm_role $HST $AC_TOKEN $MY_REALM "my-admin-role"
