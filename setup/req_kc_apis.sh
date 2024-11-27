@@ -150,13 +150,13 @@ call_get_client_scope_audience()
 }
 # }}}
 
-# {{{ call_assing_def_client_scope_to_client()
+# {{{ call_assign_def_client_scope_to_client()
 # $1: Admin REST API Host
 # $2: access token
 # $3: realm's name
 # $4: client's id
 # $5: client scope's id
-call_assing_def_client_scope_to_client()
+call_assign_def_client_scope_to_client()
 {
 	curl -v -X PUT \
 		"$1/admin/realms/$3/clients/$4/default-client-scopes/$5" \
@@ -164,13 +164,13 @@ call_assing_def_client_scope_to_client()
 }
 # }}}
 
-# {{{ call_assing_opt_client_scope_to_client()
+# {{{ call_assign_opt_client_scope_to_client()
 # $1: Admin REST API Host
 # $2: access token
 # $3: realm's name
 # $4: client's id
 # $5: client scope's id
-call_assing_opt_client_scope_to_client()
+call_assign_opt_client_scope_to_client()
 {
 	curl -v -X PUT \
 		"$1/admin/realms/$3/clients/$4/optional-client-scopes/$5" \
@@ -278,9 +278,9 @@ call_get_realm_roles()
 # $1: Admin REST API Host
 # $2: access token
 # $3: realm's name
-# $4: group's id to assing role
-# $5: rold's id to assing to group
-# $6: rold's name to assing to group
+# $4: group's id to assign role
+# $5: rold's id to assign to group
+# $6: rold's name to assign to group
 call_assign_realm_role_to_group()
 {
 	JSON="[{\"id\": \"$5\", \"name\": \"$6\"}]"

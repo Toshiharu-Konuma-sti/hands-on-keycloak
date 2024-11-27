@@ -3,8 +3,8 @@
 CUR_DIR=$(cd $(dirname $0); pwd)
 . $CUR_DIR/functions.sh
 . $CUR_DIR/variables.sh
-. $CUR_DIR/call_kc_apis.sh
-. $CUR_DIR/comb_kc_apis.sh
+. $CUR_DIR/req_kc_apis.sh
+. $CUR_DIR/pretreatment.sh
 
 call_show_start_banner
 

@@ -3,8 +3,8 @@
 CUR_DIR=$(cd $(dirname $0); pwd)
 . $CUR_DIR/functions.sh
 . $CUR_DIR/variables.sh
-. $CUR_DIR/call_kc_apis.sh
-. $CUR_DIR/comb_kc_apis.sh
+. $CUR_DIR/req_kc_apis.sh
+. $CUR_DIR/pretreatment.sh
 
 call_show_start_banner
 
@@ -18,16 +18,13 @@ echo "\n### START: Get realm roles ##########"
 JSON_ROL=$(call_get_realm_roles $KC_URL $AC_TOKEN $MY_REALM)
 
 echo "\n### START: Assign a realm rols to a group ##########"
-run_assing_realm_role_to_group \
+run_assign_realm_role_to_group \
 	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-admin-grp" "my-admin-role"
-run_assing_realm_role_to_group \
+run_assign_realm_role_to_group \
 	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-staff-grp" "my-staff-role"
-run_assing_realm_role_to_group \
+run_assign_realm_role_to_group \
 	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-flat-grp" "my-admin-role"
-run_assing_realm_role_to_group \
+run_assign_realm_role_to_group \
 	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-flat-grp" "my-staff-role"
-
-echo "\n### START: Get groups ##########"
-call_get_groups $KC_URL $AC_TOKEN $MY_REALM
 
 call_show_finish_banner
