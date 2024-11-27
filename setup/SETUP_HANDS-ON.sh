@@ -9,9 +9,9 @@ echo "# START SCRIPT"
 echo "############################################################"
 
 $CUR_DIR/step01-create_realm.sh
-$CUR_DIR/step02-create_client.sh
-$CUR_DIR/step03-create_client_scope.sh
-$CUR_DIR/step04-assign_audience_to_client_scope.sh
+$CUR_DIR/step02-create_client_scope.sh
+$CUR_DIR/step03-assign_audience_to_client_scope.sh
+$CUR_DIR/step04-create_client.sh
 $CUR_DIR/step05-assign_client_scope_to_client.sh
 $CUR_DIR/step06-create_group.sh
 $CUR_DIR/step07-create_realm_role.sh
