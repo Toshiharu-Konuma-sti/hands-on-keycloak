@@ -1,15 +1,14 @@
-version: '3.8'
-
 services:
 
   keycloak:
     container_name: keycloak
-    image: quay.io/keycloak/keycloak:25.0.4
+    image: quay.io/keycloak/keycloak:26.5.5
     command: start-dev
     environment:
       KEYCLOAK_ADMIN: ${KC_ADM_USER}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADM_PASS}
     networks:
+      - internal
       - external
     ports:
       - 8080:8080
@@ -20,24 +19,27 @@ services:
       timeout: 10s
       retries: 60
 
-  ressvr:
-    container_name: ressvr
-    image: eclipse-temurin:21
-    networks:
-      - external
-    ports:
-      - 8111:8111
-    volumes:
-      - ./resource-server:/webapi
-    working_dir: /webapi
-    command: ./mvnw spring-boot:run
-    tty: true
-    depends_on:
-      keycloak:
-        condition: service_healthy
+#  ressvr:
+#    container_name: ressvr
+#    image: eclipse-temurin:21
+#    networks:
+#      - external
+#    ports:
+#      - 8111:8111
+#    volumes:
+#      - ./resource-server:/webapi
+#    working_dir: /webapi
+#    command: ./mvnw spring-boot:run
+#    tty: true
+#    depends_on:
+#      keycloak:
+#        condition: service_healthy
 
 networks:
+  internal:
+    name: intra-net
+    driver: bridge
+    internal: true
   external:
     name: hands-net
     driver: bridge
-
