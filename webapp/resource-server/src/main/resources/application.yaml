@@ -8,6 +8,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          # Keycloak側のRealm名に合わせて変更してください（例: myrealm）
-          # コンテナ外から起動する場合は localhost、コンテナ間通信ならコンテナ名
           issuer-uri: http://localhost:8080/realms/handson
+        opaquetoken:
+          introspection-uri: http://localhost:8080/realms/handson/protocol/openid-connect/token/introspect
+          client-id: my-resource-server-client
+          client-secret: ${OPAQUE_CLIENT_SECRET}
