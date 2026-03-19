@@ -18,6 +18,7 @@ services:
       interval: 3s
       timeout: 10s
       retries: 60
+    restart: unless-stopped
 
 #  ressvr:
 #    container_name: ressvr
