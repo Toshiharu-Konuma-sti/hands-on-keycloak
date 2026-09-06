@@ -50,6 +50,8 @@ show_url()
  * Information:
  * - Navigate to Web ui tools with the URL below.
  *   - Keycloak:    http://localhost:8080/
+ *   - Grafana:     http://localhost:3000/
+ *   - Nextcloud:   http://localhost:8081/
  ***********************************************************/
 
 EOS

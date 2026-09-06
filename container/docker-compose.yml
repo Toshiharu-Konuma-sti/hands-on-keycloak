@@ -2,11 +2,10 @@ services:
 
   keycloak:
     container_name: keycloak
-    image: quay.io/keycloak/keycloak:26.5.5
+    image: quay.io/keycloak/keycloak:26.7.3
     command: start-dev
-    environment:
-      KEYCLOAK_ADMIN: ${KC_ADM_USER}
-      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADM_PASS}
+    env_file:
+      - .env-keycloak
     networks:
       - internal
       - external
@@ -35,6 +34,48 @@ services:
 #    depends_on:
 #      keycloak:
 #        condition: service_healthy
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:13.0.1
+#    environment:
+#      GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+#      GF_AUTH_GENERIC_OAUTH_NAME: Keycloak
+#      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: grafana
+#      # TODO: Keycloakでgrafanaクライアントを作成後、発行されたシークレットに置き換える
+#      GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: changeme
+#      GF_AUTH_GENERIC_OAUTH_SCOPES: openid email profile
+#      # ブラウザからのリダイレクトはlocalhost、サーバ間通信はコンテナ名で解決する
+#      GF_AUTH_GENERIC_OAUTH_AUTH_URL: http://localhost:8080/realms/handson/protocol/openid-connect/auth
+#      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: http://keycloak:8080/realms/handson/protocol/openid-connect/token
+#      GF_AUTH_GENERIC_OAUTH_API_URL: http://keycloak:8080/realms/handson/protocol/openid-connect/userinfo
+#      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: contains(realm_access.roles[*], 'admin') && 'Admin' || 'Viewer'
+#      GF_SERVER_ROOT_URL: http://localhost:3000/
+    networks:
+      - external
+    ports:
+      - 3000:3000
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    restart: unless-stopped
+
+  nextcloud:
+    container_name: nextcloud
+    image: nextcloud:34.0.3
+    environment:
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: password
+      NEXTCLOUD_TRUSTED_DOMAINS: localhost
+      # SAML連携は`user_saml`アプリの有効化とIdP設定をコンテナ起動後にoccコマンドで行う
+    networks:
+      - external
+    ports:
+      - 8081:80
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    restart: unless-stopped
 
 networks:
   internal:
