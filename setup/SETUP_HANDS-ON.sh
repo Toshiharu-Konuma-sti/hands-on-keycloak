@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 clear
 S_TIME=$(date +%s)

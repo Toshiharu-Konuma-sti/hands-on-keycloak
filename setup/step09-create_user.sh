@@ -4,11 +4,12 @@ CUR_DIR=$(cd $(dirname $0); pwd)
 . $CUR_DIR/functions.sh
 . $CUR_DIR/variables.sh
 . $CUR_DIR/req_kc_apis.sh
+. ${CUR_DIR}/.env-keycloak
 
 call_show_start_banner
 
 echo "\n### START: Get Access Token ##########"
-AC_TOKEN=$(call_fetch_master_access_token $KC_URL $ADM_USER $ADM_PASS)
+AC_TOKEN=$(call_fetch_master_access_token ${KC_URL} ${KEYCLOAK_ADMIN} ${KEYCLOAK_ADMIN_PASSWORD})
 
 echo "\n### START: Create users ##########"
 ##	call_enter_message "password of user to create"
