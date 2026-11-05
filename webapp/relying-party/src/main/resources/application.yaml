@@ -1,0 +1,15 @@
+server:
+  port: 8222
+
+spring:
+  application:
+    name: apisl.handson.keycloak.rp
+
+handson:
+  keycloak:
+    # ブラウザが開くURLと、このアプリ(コンテナ)が直接呼ぶURLは、ホスト名が異なる
+    browser-url: http://localhost:8080/realms/handson
+    server-url: http://keycloak:8080/realms/handson
+  resource-server-url: http://resource-server:8111
+  redirect-uri: http://localhost:8222/callback
+  client-secret: my-secret

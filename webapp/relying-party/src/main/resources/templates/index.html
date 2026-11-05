@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Relying Party</title>
+<style>
+	body { font-family: sans-serif; max-width: 1000px; margin: 1em auto; padding: 0 1em; color: #222; }
+	h1 { font-size: 1.4em; } h2 { font-size: 1.1em; border-bottom: 2px solid #4a7; padding-bottom: .2em; margin-top: 1.6em; }
+	section { margin-bottom: 1em; }
+	pre { background: #f4f4f4; padding: .6em; overflow-x: auto; margin: .3em 0; font-size: .85em; }
+	table { border-collapse: collapse; } th, td { border: 1px solid #ccc; padding: .3em .7em; text-align: left; vertical-align: top; }
+	th { background: #eee; }
+	button { padding: .35em .9em; cursor: pointer; }
+	.note { color: #555; font-size: .9em; }
+	.tag { display: inline-block; background: #e3f1ea; border: 1px solid #9c9; border-radius: 3px; padding: 0 .4em; margin: .1em; font-size: .9em; }
+	.role { background: #fdeccd; border-color: #db8; }
+	details { border: 1px solid #ccc; border-radius: 4px; padding: .3em .7em; margin: .4em 0; }
+	summary { cursor: pointer; font-weight: bold; }
+	form.inline { display: inline; }
+	.api { margin: .3em 0; }
+</style>
+</head>
+<body>
+
+<h1>Relying Party (RP)</h1>
+<p class="note">
+	IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れを体験する。
+	<b>スコープ</b>は「アプリ(RP)に許した操作」、<b>ロール</b>は「ユーザーに与えられた役割」。
+	APIは、その両方を見て許可するかを決める。
+</p>
+
+<section>
+	<h2>1. ログインする</h2>
+	<form method="post" th:action="@{/login}">
+		<p>
+			アプリ(client_id):
+			<label th:each="c : ${clients}" style="margin-right:1em">
+				<input type="radio" name="client" th:value="${c}" th:checked="${c == 'app-baseball'}"> <span th:text="${c}"></span>
+			</label>
+		</p>
+		<p>
+			<label><input type="checkbox" name="manager"> managerスコープ(read:&lt;sport&gt;.manager)も要求する</label><br>
+			<span class="note">playerスコープ(read:&lt;sport&gt;.player)は default scope のため、常に付与される。managerは optional scope のため、要求したときだけ付与される。</span>
+		</p>
+		<button type="submit">Keycloakでログイン</button>
+		<span class="note">(ユーザー: admin.sios / staff.sios / taro.sios、パスワードはユーザー名と同じ)</span>
+	</form>
+</section>
+
+<section th:if="${loggedIn}">
+	<h2>2. 取得したトークンの中身</h2>
+	<table>
+		<tr><th>ユーザー</th><td th:text="${username}"></td></tr>
+		<tr><th>アプリ(client_id)</th><td th:text="${clientId}"></td></tr>
+		<tr><th>スコープ(scope)</th><td><span class="tag" th:each="s : ${scopes}" th:text="${s}"></span></td></tr>
+		<tr><th>ロール(realm_access.roles)</th><td><span class="tag role" th:each="r : ${roles}" th:text="${r}"></span></td></tr>
+		<tr><th>宛先(aud)</th><td><span class="tag" th:each="a : ${audience}" th:text="${a}"></span></td></tr>
+	</table>
+	<details>
+		<summary>アクセストークンのクレーム(RSに渡すトークン)</summary>
+		<pre th:text="${accessJson}"></pre>
+	</details>
+	<details>
+		<summary>IDトークンのクレーム(誰がログインしたかを表す)</summary>
+		<pre th:text="${idJson}"></pre>
+	</details>
+	<form method="post" th:action="@{/logout}">
+		<button type="submit">ログアウト(Keycloakのセッションも終了)</button>
+	</form>
+</section>
+
+<section th:if="${loggedIn}">
+	<h2>3. APIを呼ぶ</h2>
+	<div class="api" th:each="a : ${apis}">
+		<form class="inline" method="post" th:action="@{/call}">
+			<input type="hidden" name="path" th:value="${a.path()}">
+			<button type="submit" th:text="${a.label()}"></button>
+		</form>
+		<span class="note" th:text="'必要な条件: ' + ${a.rule()}"></span>
+	</div>
+	<p class="note">結果は、下の「通信のトレース」に表示される。200なら許可、403なら条件を満たしていない(理由もJSONで返る)。</p>
+</section>
+
+<section>
+	<h2>通信のトレース</h2>
+	<form method="post" th:action="@{/clear}" th:if="${!steps.isEmpty()}">
+		<button type="submit">トレースを消去</button>
+	</form>
+	<p class="note" th:if="${steps.isEmpty()}">ログインすると、ここに各ステップの通信内容が表示される。</p>
+	<details th:each="s, it : ${steps}" th:open="${it.last}">
+		<summary th:text="${s.title()}"></summary>
+		<p class="note" th:text="${s.note()}"></p>
+		<b>リクエスト</b>
+		<pre th:text="${s.request()}"></pre>
+		<b>レスポンス</b>
+		<pre th:text="${s.response()}"></pre>
+	</details>
+</section>
+
+</body>
+</html>

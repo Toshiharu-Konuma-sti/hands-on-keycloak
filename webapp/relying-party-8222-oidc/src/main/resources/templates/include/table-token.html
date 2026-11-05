@@ -1,8 +1,0 @@
-<table id="tbl-token">
-<tr class="tr-y4">
-  <th>Access Token<br><button type="button" onclick="copyHidden('access-token');">copy</button></th><td><div class="rowval-lot" th:text="${access_token}"></div></td>
-    <th>Refresh Token<br><button type="button" onclick="copyHidden('refresh-token');">copy</button></th><td><div class="rowval-lot" th:text="${refresh_token}"></div></td></tr>
-<tr class="tr-y4">
-  <th>Access Token<br>Infromation</th><td><div>Token Type: <span th:text="${acTokenType}"></span><br>IssuedAt: <span th:text="${acTokenIssuedAt}"></span><br>ExpiresAt: <span th:text="${acTokenExpiresAt}"></span><br>ExpiresIn: <span th:text="${acTokenExpiresIn}"></span></div></td>
-    <th>ID Token<br><button type="button" onclick="copyHidden('id-token');">copy</button></th><td><div class="rowval-lot" th:text="${id_token}"></div></td></tr>
-</table>

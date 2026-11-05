@@ -1,7 +1,0 @@
-<div>Operate Access Token.</div>
-<ul>
-  <li><a th:href="${authUrl}">Get Access Token</a></li>
-  <li><th:block th:unless="${#strings.isEmpty(refresh_token)}"><a id="link-rf-token" href="javascript: document.frm_auth.submit();"></th:block>Refresh Access Token<th:block th:unless="${#strings.isEmpty(refresh_token)}"></a></th:block></li>
-  <li><a href="javascript: logout();">Logout</a></li>
-  <li><a th:href="${curUrl}">Reload thie page (Reset)</a></li>
-</ul>

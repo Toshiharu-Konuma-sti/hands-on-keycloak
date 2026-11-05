@@ -1,5 +1,5 @@
 server:
-  port: 8091
+  port: 8111
 
 spring:
   application:
@@ -8,8 +8,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
+          # トークンの発行者(iss)として期待する値。ブラウザから見えるKeycloakのURLに合わせる
           issuer-uri: http://localhost:8080/realms/handson
-        opaquetoken:
-          introspection-uri: http://localhost:8080/realms/handson/protocol/openid-connect/token/introspect
-          client-id: my-resource-server-client
-          client-secret: ${OPAQUE_CLIENT_SECRET}
+          # 署名の検証鍵はコンテナ間の通信で取得する(issuer-uriからの自動検出は使わない)
+          jwk-set-uri: http://keycloak:8080/realms/handson/protocol/openid-connect/certs

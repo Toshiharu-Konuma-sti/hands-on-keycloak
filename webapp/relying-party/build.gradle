@@ -1,0 +1,6 @@
+description = 'Relying Party: Authorization Code + PKCE を手書きで実装し、通信の流れを画面に表示する'
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+}

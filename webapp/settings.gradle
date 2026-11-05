@@ -1,0 +1,4 @@
+rootProject.name = 'handson-keycloak-webapp'
+
+include 'relying-party'
+include 'resource-server'

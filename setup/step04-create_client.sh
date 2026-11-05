@@ -8,7 +8,7 @@ CUR_DIR=$(cd $(dirname $0); pwd)
 
 call_show_start_banner
 
-REDIRECT="http://localhost:8222/*,http://localhost:8333/*"
+REDIRECT="http://localhost:8222/*"
 
 echo "\n### START: Get Access Token ##########"
 AC_TOKEN=$(call_fetch_master_access_token ${KC_URL} ${KEYCLOAK_ADMIN} ${KEYCLOAK_ADMIN_PASSWORD})

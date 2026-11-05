@@ -95,7 +95,7 @@ call_create_client()
 {
 	REDIRCT=$(echo $5 | sed -e 's/,/","/g')
 	WEB_ORG=$(echo $5 | sed -E 's/^.*(http|https)(:\/\/)([^/]+).*/\1\2\3/g')
-	JSON="{\"clientId\": \"$4\", \"enabled\": true, \"secret\": \"my-secret\", \"redirectUris\": [\"$REDIRCT\"], \"webOrigins\": [\"$WEB_ORG\"], \"publicClient\": false, \"consentRequired\": $6, \"fullScopeAllowed\": true}"
+	JSON="{\"clientId\": \"$4\", \"enabled\": true, \"secret\": \"my-secret\", \"redirectUris\": [\"$REDIRCT\"], \"webOrigins\": [\"$WEB_ORG\"], \"publicClient\": false, \"consentRequired\": $6, \"fullScopeAllowed\": true, \"attributes\": {\"post.logout.redirect.uris\": \"+\"}}"
 
 	curl -v POST \
 		"$1/admin/realms/$3/clients" \

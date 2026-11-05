@@ -1,0 +1,352 @@
+package jp.sios.apisl.handson.keycloak.rp;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import jakarta.servlet.http.HttpSession;
+import tools.jackson.databind.json.JsonMapper;
+
+/**
+ * Relying Party。Authorization Code + PKCE の流れを、順番どおりに手で実装している。
+ *
+ *   1. POST /login     : 認可リクエストを作り、ブラウザをKeycloakへ移動させる
+ *   2. GET  /callback  : Keycloakから戻ってくる。codeをトークンに交換し(3)、IDトークンを検証する(4)
+ *   5. POST /call      : アクセストークンを付けてResource Serverを呼ぶ
+ *
+ * 各ステップの通信内容は、画面の「通信のトレース」に表示する。
+ */
+@Controller
+public class RelyingPartyController {
+
+	private static final String AUTH_PATH = "/protocol/openid-connect/auth";
+	private static final String TOKEN_PATH = "/protocol/openid-connect/token";
+	private static final String LOGOUT_PATH = "/protocol/openid-connect/logout";
+
+	// Keycloakに登録済みのクライアントと、そのクライアントが使うスポーツ名。
+	// スコープは read:<sport>.player(default scope) と read:<sport>.manager(optional scope)
+	private static final Map<String, String> SPORT_OF_CLIENT = Map.of(
+		"app-baseball", "baseball",
+		"app-soccer", "soccer");
+
+	record Api(String label, String path, String rule) {
+	}
+
+	private static final List<Api> APIS = List.of(
+		new Api("whoami", "/apis/whoami", "認証のみ"),
+		new Api("baseball players", "/apis/sports/baseball/players", "スコープ read:baseball.player"),
+		new Api("baseball managers", "/apis/sports/baseball/managers", "スコープ read:baseball.manager かつ ロール my-admin-role"),
+		new Api("soccer players", "/apis/sports/soccer/players", "スコープ read:soccer.player"),
+		new Api("soccer managers", "/apis/sports/soccer/managers", "スコープ read:soccer.manager かつ ロール my-admin-role"));
+
+	private record Http(int status, String body) {
+	}
+
+	private final String browserUrl;
+	private final String serverUrl;
+	private final String resourceServerUrl;
+	private final String redirectUri;
+	private final String clientSecret;
+	private final JsonMapper json;
+	private final RestClient http = RestClient.create();
+
+	public RelyingPartyController(
+			@Value("${handson.keycloak.browser-url}") String browserUrl,
+			@Value("${handson.keycloak.server-url}") String serverUrl,
+			@Value("${handson.resource-server-url}") String resourceServerUrl,
+			@Value("${handson.redirect-uri}") String redirectUri,
+			@Value("${handson.client-secret}") String clientSecret,
+			JsonMapper json) {
+		this.browserUrl = browserUrl;
+		this.serverUrl = serverUrl;
+		this.resourceServerUrl = resourceServerUrl;
+		this.redirectUri = redirectUri;
+		this.clientSecret = clientSecret;
+		this.json = json;
+	}
+
+	@GetMapping("/")
+	String index(HttpSession session, Model model) {
+		Map<String, Object> access = attr(session, "accessClaims");
+		model.addAttribute("loggedIn", access != null);
+		model.addAttribute("clients", SPORT_OF_CLIENT.keySet().stream().sorted().toList());
+		model.addAttribute("apis", APIS);
+		model.addAttribute("steps", steps(session));
+		if (access != null) {
+			model.addAttribute("clientId", session.getAttribute("clientId"));
+			model.addAttribute("username", access.get("preferred_username"));
+			model.addAttribute("scopes", List.of(String.valueOf(access.getOrDefault("scope", "")).split(" ")));
+			model.addAttribute("audience", Tokens.audienceOf(access));
+			model.addAttribute("roles", realmRoles(access));
+			model.addAttribute("accessJson", pretty(access));
+			model.addAttribute("idJson", pretty(session.getAttribute("idClaims")));
+		}
+		return "index";
+	}
+
+	// ---- 1. 認可リクエスト ------------------------------------------------------------------
+
+	@PostMapping("/login")
+	String login(@RequestParam String client, @RequestParam(required = false) String manager,
+			HttpSession session) {
+		String clientId = SPORT_OF_CLIENT.containsKey(client) ? client : "app-baseball";
+		String sport = SPORT_OF_CLIENT.get(clientId);
+		// playerスコープはdefault scopeなので指定しなくても付く。managerスコープは明示して要求する(optional scope)
+		String scope = "openid" + (manager != null ? " read:" + sport + ".manager" : "");
+
+		String state = Tokens.random(16);               // CSRF対策: 戻ってきたときに一致を確認する
+		String nonce = Tokens.random(16);               // リプレイ対策: IDトークンに入って戻ってくる
+		String verifier = Tokens.random(32);            // PKCE: 秘密の値。トークン交換のときに送る
+		String challenge = Tokens.s256(verifier);       // PKCE: そのハッシュ値。認可リクエストで先に送る
+
+		// 前回のログイン結果を捨てて、最初からやり直す
+		for (String key : List.of("accessToken", "idToken", "accessClaims", "idClaims", "steps")) {
+			session.removeAttribute(key);
+		}
+		session.setAttribute("clientId", clientId);
+		session.setAttribute("state", state);
+		session.setAttribute("nonce", nonce);
+		session.setAttribute("verifier", verifier);
+
+		Map<String, String> params = new LinkedHashMap<>();
+		params.put("response_type", "code");
+		params.put("client_id", clientId);
+		params.put("redirect_uri", redirectUri);
+		params.put("scope", scope);
+		params.put("state", state);
+		params.put("nonce", nonce);
+		params.put("code_challenge", challenge);
+		params.put("code_challenge_method", "S256");
+
+		UriComponentsBuilder url = UriComponentsBuilder.fromUriString(browserUrl + AUTH_PATH);
+		params.forEach(url::queryParam);
+		URI authUrl = url.build().encode().toUri();
+
+		steps(session).add(new Step(
+			"1. 認可リクエスト(ブラウザ → Keycloak)",
+			"RPはブラウザをKeycloakのログイン画面へ移動させる。どのアプリが(client_id)、何を許してほしいか(scope)を伝える。",
+			"GET " + browserUrl + AUTH_PATH + "\n" + lines(params),
+			"(Keycloakのログイン画面と、同意画面が表示される)"));
+		return "redirect:" + authUrl;
+	}
+
+	// ---- 2. Keycloakから戻る → 3. トークン交換 → 4. IDトークンの検証 -----------------------------
+
+	@GetMapping("/callback")
+	String callback(@RequestParam(required = false) String code,
+			@RequestParam(required = false) String state,
+			@RequestParam(required = false) String error,
+			@RequestParam(name = "error_description", required = false) String errorDescription,
+			HttpSession session) {
+		List<Step> steps = steps(session);
+
+		Map<String, String> returned = new LinkedHashMap<>();
+		if (code != null) returned.put("code", Tokens.abbreviate(code));
+		if (state != null) returned.put("state", state);
+		if (error != null) returned.put("error", error);
+		if (errorDescription != null) returned.put("error_description", errorDescription);
+		steps.add(new Step(
+			"2. Keycloakから戻る(ブラウザ → RP)",
+			"ログインと同意が済むと、認可コード(code)を付けてRPに戻ってくる。codeはまだ「引換券」で、APIは呼べない。",
+			"GET " + redirectUri + "\n" + lines(returned),
+			"(RPはこのcodeをトークンに交換する)"));
+
+		if (error != null) {
+			return "redirect:/";
+		}
+		if (code == null || !Objects.equals(state, session.getAttribute("state"))) {
+			steps.add(new Step("state の不一致", "戻ってきたstateが、最初に送った値と違う。処理を中止する。", "", ""));
+			return "redirect:/";
+		}
+
+		String clientId = (String) session.getAttribute("clientId");
+		MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+		form.add("grant_type", "authorization_code");
+		form.add("code", code);
+		form.add("redirect_uri", redirectUri);
+		form.add("client_id", clientId);
+		form.add("client_secret", clientSecret);
+		form.add("code_verifier", (String) session.getAttribute("verifier"));
+
+		Http res = send(http.post().uri(serverUrl + TOKEN_PATH)
+			.contentType(MediaType.APPLICATION_FORM_URLENCODED).body(form));
+
+		Map<String, String> shownForm = new LinkedHashMap<>();
+		form.forEach((k, v) -> shownForm.put(k, switch (k) {
+			case "client_secret" -> "******(表示用に隠している)";
+			case "code" -> Tokens.abbreviate(v.get(0));
+			default -> v.get(0);
+		}));
+		Map<String, Object> body = parseMap(res.body());
+		steps.add(new Step(
+			"3. codeをトークンに交換(RP → Keycloak)",
+			"ブラウザを通らない直接の通信(バックチャネル)。client_secretとcode_verifier(PKCE)で、RP本人であることを示す。",
+			"POST " + serverUrl + TOKEN_PATH + "\n" + lines(shownForm),
+			"HTTP " + res.status() + "\n" + pretty(abbreviateTokens(body))));
+		if (res.status() != 200) {
+			return "redirect:/";
+		}
+
+		String accessToken = (String) body.get("access_token");
+		String idToken = (String) body.get("id_token");
+		Map<String, Object> accessClaims = Tokens.claimsOf(json, accessToken);
+		Map<String, Object> idClaims = Tokens.claimsOf(json, idToken);
+
+		List<String> checks = new ArrayList<>();
+		boolean ok = checkIdToken(idClaims, clientId, (String) session.getAttribute("nonce"), checks);
+		steps.add(new Step(
+			"4. IDトークンの検証(RP)",
+			"IDトークンは「誰がログインしたか」を表す。発行者・宛先・nonce・期限を確認する。",
+			String.join("\n", checks),
+			ok ? "OK: ログインを受け付ける" : "NG: ログインを受け付けない"));
+		if (!ok) {
+			return "redirect:/";
+		}
+
+		session.setAttribute("accessToken", accessToken);
+		session.setAttribute("idToken", idToken);
+		session.setAttribute("accessClaims", accessClaims);
+		session.setAttribute("idClaims", idClaims);
+		return "redirect:/";
+	}
+
+	// ---- 5. APIの呼び出し -----------------------------------------------------------------
+
+	@PostMapping("/call")
+	String call(@RequestParam String path, HttpSession session) {
+		String token = (String) session.getAttribute("accessToken");
+		if (token == null || APIS.stream().noneMatch(a -> a.path().equals(path))) {
+			return "redirect:/";
+		}
+		String url = resourceServerUrl + path;
+		Http res = send(http.get().uri(url).header(HttpHeaders.AUTHORIZATION, "Bearer " + token));
+		steps(session).add(new Step(
+			"5. APIを呼ぶ: " + path + "  →  " + res.status(),
+			"アクセストークンをAuthorizationヘッダに付けて、Resource Serverを呼ぶ。許可するかどうかは、RSがトークンの中身で判断する。",
+			"GET " + url + "\nAuthorization: Bearer " + Tokens.abbreviate(token),
+			"HTTP " + res.status() + "\n" + pretty(parseAny(res.body()))));
+		return "redirect:/";
+	}
+
+	// ---- ログアウト・トレースの消去 -----------------------------------------------------------
+
+	@PostMapping("/logout")
+	String logout(HttpSession session) {
+		String idToken = (String) session.getAttribute("idToken");
+		session.invalidate();
+		if (idToken == null) {
+			return "redirect:/";
+		}
+		// RPのセッションだけでなく、Keycloakのセッションも終了する(別のユーザーでログインし直せる)
+		URI url = UriComponentsBuilder.fromUriString(browserUrl + LOGOUT_PATH)
+			.queryParam("id_token_hint", idToken)
+			.queryParam("post_logout_redirect_uri", "http://localhost:8222/")
+			.build().encode().toUri();
+		return "redirect:" + url;
+	}
+
+	@PostMapping("/clear")
+	String clear(HttpSession session) {
+		steps(session).clear();
+		return "redirect:/";
+	}
+
+	// ---- 補助 -----------------------------------------------------------------------------
+
+	private boolean checkIdToken(Map<String, Object> claims, String clientId, String nonce, List<String> out) {
+		boolean issOk = browserUrl.equals(claims.get("iss"));
+		boolean audOk = Tokens.audienceOf(claims).contains(clientId);
+		boolean nonceOk = Objects.equals(nonce, claims.get("nonce"));
+		boolean expOk = ((Number) claims.get("exp")).longValue() > System.currentTimeMillis() / 1000;
+		out.add((issOk ? "OK" : "NG") + "  iss   = " + claims.get("iss") + "   (期待: " + browserUrl + ")");
+		out.add((audOk ? "OK" : "NG") + "  aud   = " + Tokens.audienceOf(claims) + "   (期待: " + clientId + " を含む)");
+		out.add((nonceOk ? "OK" : "NG") + "  nonce = " + claims.get("nonce") + "   (認可リクエストで送った値と一致)");
+		out.add((expOk ? "OK" : "NG") + "  exp   = " + claims.get("exp") + "   (現在時刻より後)");
+		if (!issOk) {
+			out.add("ヒント: issがbrowser-urlと違う場合は、KeycloakのKC_HOSTNAMEの設定を確認する");
+		}
+		return issOk && audOk && nonceOk && expOk;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<String> realmRoles(Map<String, Object> claims) {
+		Map<String, Object> realmAccess = (Map<String, Object>) claims.get("realm_access");
+		return realmAccess == null ? List.of() : (List<String>) realmAccess.get("roles");
+	}
+
+	private Map<String, Object> abbreviateTokens(Map<String, Object> body) {
+		Map<String, Object> shown = new LinkedHashMap<>(body);
+		for (String key : List.of("access_token", "refresh_token", "id_token")) {
+			if (shown.get(key) instanceof String token) {
+				shown.put(key, Tokens.abbreviate(token));
+			}
+		}
+		return shown;
+	}
+
+	private Http send(RestClient.RequestHeadersSpec<?> request) {
+		try {
+			return request.exchange((req, res) -> new Http(res.getStatusCode().value(), res.bodyTo(String.class)));
+		} catch (Exception e) {
+			return new Http(0, e.toString());
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> parseMap(String text) {
+		Object value = parseAny(text);
+		return value instanceof Map ? (Map<String, Object>) value : Map.of();
+	}
+
+	private Object parseAny(String text) {
+		try {
+			return json.readValue(text, Object.class);
+		} catch (Exception e) {
+			return text;
+		}
+	}
+
+	private String pretty(Object value) {
+		if (value instanceof String s) {
+			return s;
+		}
+		return json.writerWithDefaultPrettyPrinter().writeValueAsString(value);
+	}
+
+	private static String lines(Map<String, String> params) {
+		StringBuilder sb = new StringBuilder();
+		params.forEach((k, v) -> sb.append("  ").append(k).append(" = ").append(v).append("\n"));
+		return sb.toString().stripTrailing();
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> T attr(HttpSession session, String name) {
+		return (T) session.getAttribute(name);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<Step> steps(HttpSession session) {
+		List<Step> steps = (List<Step>) session.getAttribute("steps");
+		if (steps == null) {
+			steps = new ArrayList<>();
+			session.setAttribute("steps", steps);
+		}
+		return steps;
+	}
+}

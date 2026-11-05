@@ -19,21 +19,44 @@ services:
       retries: 60
     restart: unless-stopped
 
-#  ressvr:
-#    container_name: ressvr
-#    image: eclipse-temurin:21
-#    networks:
-#      - external
-#    ports:
-#      - 8111:8111
-#    volumes:
-#      - ./resource-server:/webapi
-#    working_dir: /webapi
-#    command: ./mvnw spring-boot:run
-#    tty: true
-#    depends_on:
-#      keycloak:
-#        condition: service_healthy
+#  以下の2つは、RPとRSを体験するためのアプリ(webapp/ のGradleマルチプロジェクト)。
+#  ソースを読み取り専用で取り込み、コンテナ内でビルドして起動する。
+#  初回はライブラリの取得に数分かかる(以降はGradleキャッシュのボリュームで高速化)。
+#  ソースを編集したら `docker compose restart relying-party resource-server` で反映する。
+
+  resource-server:
+    container_name: resource-server
+    image: eclipse-temurin:21
+    networks:
+      - external
+    ports:
+      - 8111:8111
+    volumes:
+      - ../webapp:/src:ro
+      - gradle-cache-rs:/root/.gradle
+    working_dir: /webapp
+    command: sh -c "cp -a /src/. /webapp/ && ./gradlew :resource-server:bootRun --console=plain"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    restart: unless-stopped
+
+  relying-party:
+    container_name: relying-party
+    image: eclipse-temurin:21
+    networks:
+      - external
+    ports:
+      - 8222:8222
+    volumes:
+      - ../webapp:/src:ro
+      - gradle-cache-rp:/root/.gradle
+    working_dir: /webapp
+    command: sh -c "cp -a /src/. /webapp/ && ./gradlew :relying-party:bootRun --console=plain"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    restart: unless-stopped
 
   grafana:
     container_name: grafana
@@ -79,3 +102,13 @@ networks:
   external:
     name: hands-net
     driver: bridge
+
+volumes:
+  # `down -v`で消えないように外部ボリュームにする(CREATE_CONTAINER.shが作成する)。
+  # Gradleのロックはコンテナ間で共有できないため、コンテナごとに分ける
+  gradle-cache-rs:
+    name: hands-gradle-cache-rs
+    external: true
+  gradle-cache-rp:
+    name: hands-gradle-cache-rp
+    external: true

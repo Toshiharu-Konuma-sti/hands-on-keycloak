@@ -5,6 +5,9 @@ create_container()
 {
 	CUR_DIR=$1
 	echo "\n### START: Create new containers ##########"
+	# RP/RSのビルドで使うGradleキャッシュ。`down -v`で消えないよう、composeの外で作る(既にあれば何もしない)
+	docker volume create hands-gradle-cache-rs > /dev/null
+	docker volume create hands-gradle-cache-rp > /dev/null
 	docker compose \
 		-f $CUR_DIR/docker-compose.yml \
 		up -d -V --remove-orphans
@@ -52,6 +55,9 @@ show_url()
  *   - Keycloak:    http://localhost:8080/
  *   - Grafana:     http://localhost:3000/
  *   - Nextcloud:   http://localhost:8081/
+ *   - Relying Party:   http://localhost:8222/
+ *   - Resource Server: http://localhost:8111/apis/whoami (needs an access token)
+ *   (The first start of Relying Party/Resource Server takes a few minutes to build.)
  ***********************************************************/
 
 EOS
