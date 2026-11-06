@@ -18,6 +18,7 @@
 	summary { cursor: pointer; font-weight: bold; }
 	form.inline { display: inline; }
 	.api { margin: .3em 0; }
+	.error { border-left: 6px solid #c43; background: #fdf0ee; padding: .4em .8em; margin: .6em 0; }
 	ul.note { margin: .3em 0 0; padding-left: 1.4em; }
 	ul.token-summary { margin: .2em 0 .8em; padding-left: 1.4em; }
 	ul.token-summary li { margin: .2em 0; }
@@ -35,7 +36,7 @@
 <h1>Relying Party (RP)</h1>
 <p class="note">
 	IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れを体験する。
-	このアプリは「経費精算」を題材にしている。申請アプリと承認アプリ、一般社員(staff.sios)と上長(admin.sios)を切り替えて試す。
+	このアプリは「経費精算」を題材にしている。申請アプリと承認アプリ、平社員(staff.sios)・課長(taro.sios)・部長(admin.sios)を切り替えて試す。
 	<b>スコープ</b>は「アプリ(RP)に許した操作」、<b>ロール</b>は「ユーザーに与えられた役割」。
 	APIは、その両方を見て許可するかを決める。
 </p>
@@ -50,16 +51,36 @@
 			</label>
 		</p>
 		<div>
-			<label><input type="checkbox" name="optional" th:checked="${selectedOptional}"> optionalスコープも要求する(申請アプリ: expenses:write / 承認アプリ: expenses:approve)</label>
+			要求するoptionalスコープ(アプリに関係なく、自由に選べる):
+			<label th:each="s : ${optionalScopes}" style="margin-right:1em">
+				<input type="checkbox" name="scope" th:value="${s}" th:checked="${selectedScopes.contains(s)}"> <code th:text="${s}"></code>
+			</label>
 			<ul class="note">
-				<li><code>expenses:read</code> は default scope のため、常に付与される。</li>
+				<li><code>expenses:read</code> は default scope のため、要求しなくても常に付与される。</li>
 				<li><code>expenses:write</code> / <code>expenses:approve</code> は optional scope のため、要求したときだけ付与される。</li>
-				<li>承認アプリには write、申請アプリには approve は割り当てていない。</li>
+				<li>Keycloakの設定: 申請アプリには write、承認アプリには approve だけを割り当てている。</li>
+				<li>アプリに割り当てていないスコープを要求すると、Keycloakがエラー(<code>invalid_scope</code>)で拒否する。</li>
 			</ul>
 		</div>
 		<button type="submit">Keycloakでログイン</button>
-		<span class="note">(ユーザー: admin.sios / staff.sios / taro.sios、パスワードはユーザー名と同じ)</span>
 	</form>
+	<div class="error" th:if="${loginError != null}">
+		<b>ログインに失敗した(Keycloakからのエラー)</b>
+		<div>error: <code th:text="${loginError.error()}"></code></div>
+		<div th:if="${loginError.description() != null}">error_description: <code th:text="${loginError.description()}"></code></div>
+		<div th:if="${loginError.hint() != null}" th:text="${loginError.hint()}"></div>
+	</div>
+	<form method="post" th:action="@{/logout}" th:if="${loggedIn}" style="margin-top:.6em">
+		<button type="submit">ログアウト(Keycloakのセッションも終了)</button>
+		<span class="note">(ログアウトすると、この画面は初期状態に戻る)</span>
+	</form>
+	<p class="note" style="margin-bottom:.3em">ログインするユーザー(パスワードはユーザー名と同じ)と、付与されるロール:</p>
+	<table>
+		<tr><th>ユーザー</th><th>役職</th><th>付与されるロール(上位のロールは下位を含む)</th></tr>
+		<tr><td>staff.sios</td><td>平社員</td><td><span class="tag role">my-staff-role</span></td></tr>
+		<tr><td>taro.sios</td><td>課長</td><td><span class="tag role">my-manager-role</span> + 平社員のロール(my-staff-role)</td></tr>
+		<tr><td>admin.sios</td><td>部長</td><td><span class="tag role">my-admin-role</span> + 課長と平社員のロール(my-manager-role, my-staff-role)</td></tr>
+	</table>
 </section>
 
 <section th:if="${loggedIn}">
@@ -79,9 +100,6 @@
 		<summary>IDトークンのクレーム(誰がログインしたかを表す)</summary>
 		<pre th:text="${idJson}"></pre>
 	</details>
-	<form method="post" th:action="@{/logout}">
-		<button type="submit">ログアウト(Keycloakのセッションも終了)</button>
-	</form>
 </section>
 
 <section th:if="${loggedIn}">

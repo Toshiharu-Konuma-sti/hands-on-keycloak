@@ -25,8 +25,8 @@
     - [体験1: ログインして、トークンの中身を見る](#体験1-ログインしてトークンの中身を見る)
     - [体験2: 一覧を見て、申請してみる(スコープ)](#体験2-一覧を見て申請してみるスコープ)
     - [体験3: スコープを増やして、申請する](#体験3-スコープを増やして申請する)
-    - [体験4: 上長として承認する(スコープとロール)](#体験4-上長として承認するスコープとロール)
-    - [体験5: アプリの違いを見る](#体験5-アプリの違いを見る)
+    - [体験4: 課長と部長で、承認待ちの一覧と承認を試す(スコープとロール)](#体験4-課長と部長で承認待ちの一覧と承認を試すスコープとロール)
+    - [体験5: アプリの違いを見る(Keycloakがスコープを決める)](#体験5-アプリの違いを見るkeycloakがスコープを決める)
     - [まとめ(期待される結果)](#まとめ期待される結果)
     - [興味のある人向け: 仕組みを読む](#興味のある人向け-仕組みを読む)
     - [トラブルシュート](#トラブルシュート-2)
@@ -50,11 +50,13 @@
 
 - 連携後にログインするKeycloakのユーザ(`handson`レルム)。
 
-    | ユーザ      | パスワード  | 付与されるレルムロール            |
-    |-------------|-------------|-----------------------------------|
-    | admin.sios  | admin.sios  | my-admin-role                     |
-    | staff.sios  | staff.sios  | my-staff-role                     |
-    | taro.sios   | taro.sios   | my-admin-role, my-staff-role      |
+    | ユーザ      | パスワード  | 役職   | 付与されるレルムロール                                          |
+    |-------------|-------------|--------|-----------------------------------------------------------------|
+    | staff.sios  | staff.sios  | 平社員 | my-staff-role                                                   |
+    | taro.sios   | taro.sios   | 課長   | my-manager-role (my-staff-roleを含む)                           |
+    | admin.sios  | admin.sios  | 部長   | my-admin-role (my-manager-roleとmy-staff-roleを含む)             |
+
+    上位のロールは下位のロールを含む(複合ロール)。トークンには、含まれるロールもすべて展開されて入る。
 
 - ブラウザからのアクセスは`localhost`、コンテナ間(サーバ間)の通信はコンテナ名(`keycloak`)を使う点に注意する。
 
@@ -258,7 +260,7 @@ Keycloakのレルムロールは、アクセストークンの`realm_access.role
 3. 一度ログアウトし、ユーザを替えて再ログインして、以下になることを確認する。(ロールはログイン時に同期される)
     - admin.sios : Admin   (my-admin-role)
     - staff.sios : Editor  (my-staff-role)
-    - taro.sios  : Admin   (両方のロールを持つため、先に評価されるAdminになる)
+    - taro.sios  : Editor  (課長のmy-manager-roleと、含まれるmy-staff-roleは持つが、my-admin-roleは持たないため)
 4. ロールは、ローカル管理者でログインして[Administration] > [Users and access] > [Users]で確認できる。
 
 #### 5. (発展)確認ポイント
@@ -288,7 +290,7 @@ Keycloakのレルムロールは、アクセストークンの`realm_access.role
 
 SAMLやOIDCの設定を体験する演習とは違い、ここは「できあがった構成を動かして観察する」演習。
 設定は不要。ブラウザで操作し、画面に表示される通信の内容を見ながら、スコープとロールの違いを理解する。
-題材は「経費精算」。社員が経費を申請し、上長が承認する。
+題材は「経費精算」。平社員が経費を申請し、課長が承認待ちを確認し、部長が承認する。
 
 ```
  ブラウザ ──(1)ログイン──▶ Keycloak(IdP)
@@ -320,7 +322,7 @@ SAMLやOIDCの設定を体験する演習とは違い、ここは「できあが
 | 種類     | 意味                                       | トークン上の場所      | このハンズオンでの値                                                              |
 |----------|--------------------------------------------|---------------------|-------------------------------------------------------------------------------|
 | スコープ | アプリ(RP)に許した操作(ユーザーが同意する)   | `scope`             | `expenses:read`(既定) / `expenses:write` / `expenses:approve`(いずれも任意)   |
-| ロール   | ユーザーに与えられた役割(管理者が付与する)   | `realm_access.roles`| `my-staff-role`(一般社員) / `my-admin-role`(上長)                           |
+| ロール   | ユーザーに与えられた役割(管理者が付与する)   | `realm_access.roles`| `my-staff-role`(平社員) / `my-manager-role`(課長) / `my-admin-role`(部長)    |
 
 アプリ(Keycloakのクライアント)ごとに、付与できるスコープが違う。
 
@@ -329,7 +331,18 @@ SAMLやOIDCの設定を体験する演習とは違い、ここは「できあが
 | 経費申請アプリ (`app-expense-claim`)    | `expenses:read`           | `expenses:write`                   |
 | 経費承認アプリ (`app-expense-approval`) | `expenses:read`           | `expenses:approve`                 |
 
-ユーザー: `staff.sios`=一般社員(`my-staff-role`)、`admin.sios`=上長(`my-admin-role`)、`taro.sios`=両方。
+画面では、optional scope(`expenses:write` / `expenses:approve`)を、アプリに関係なく自由に選んで要求できる。
+ただし、そのアプリに割り当てていないスコープを要求すると、Keycloakは**ログインを拒否してエラー(`invalid_scope`)で戻す**。
+どのスコープを付与するかは、RPではなくKeycloakのクライアント設定で決まる。
+
+ユーザーと役職: `staff.sios`=平社員、`taro.sios`=課長、`admin.sios`=部長。
+上位のロールは下位のロールを含む(Keycloakの複合ロール)。部長のトークンには、`my-admin-role`だけでなく、含まれる`my-manager-role`と`my-staff-role`も入る。
+
+| 役職   | ユーザー   | 付与されるロール(トークンに入るもの)                                |
+|--------|------------|-----------------------------------------------------------------------|
+| 平社員 | staff.sios | `my-staff-role`                                                       |
+| 課長   | taro.sios  | `my-manager-role`、`my-staff-role`                                    |
+| 部長   | admin.sios | `my-admin-role`、`my-manager-role`、`my-staff-role`                   |
 
 RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`@PreAuthorize`)
 
@@ -338,8 +351,8 @@ RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`
 | `GET  /apis/whoami`                  | 認証のみ(トークンの中身を返す)                                          |
 | `GET  /apis/expenses`                | スコープ `expenses:read`(自分が申請した経費だけ返す)                     |
 | `POST /apis/expenses`                | スコープ `expenses:write`(経費の申請)                                 |
-| `GET  /apis/expenses/pending`        | スコープ `expenses:approve` **かつ** ロール `my-admin-role`(承認待ちの一覧) |
-| `POST /apis/expenses/{id}/approve`   | スコープ `expenses:approve` **かつ** ロール `my-admin-role`(経費の承認)     |
+| `GET  /apis/expenses/pending`        | スコープ `expenses:approve` **かつ** ロール `my-manager-role`(課長以上)(承認待ちの一覧) |
+| `POST /apis/expenses/{id}/approve`   | スコープ `expenses:approve` **かつ** ロール `my-admin-role`(部長のみ)(経費の承認)       |
 
 - RSは、`aud`(宛先)に`expense-api`を含むトークンだけを受け付ける。宛先が違うトークンは401になる。
 - 経費のデータはRSのメモリ上にあり、初期データは3件(staff.siosの2件、taro.siosの1件、いずれも申請中)。RSを再起動すると初期状態に戻る。
@@ -347,8 +360,8 @@ RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`
 ### 体験1: ログインして、トークンの中身を見る
 
 1. http://localhost:8222/ を開く。
-2. アプリは`経費申請アプリ`、optionalスコープは**チェックなし**のまま[Keycloakでログイン]を押す。
-3. Keycloakのログイン画面で`staff.sios / staff.sios`(一般社員)でログインする。
+2. アプリは`経費申請アプリ`、optionalスコープ(`expenses:write` / `expenses:approve`)は**どちらもチェックなし**のまま[Keycloakでログイン]を押す。
+3. Keycloakのログイン画面で`staff.sios / staff.sios`(平社員)でログインする。
 4. 同意画面で、RPが要求している内容を確認して[Yes]を押す。(スコープは「アプリに許すこと」)
 5. RPに戻ったら、画面の以下を見る。
     - [取得したトークンの中身]: ユーザー、スコープ(`expenses:read`)、ロール(`my-staff-role`)、宛先(`expense-api`)
@@ -363,50 +376,63 @@ RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`
 
 1. `GET 経費の一覧(自分の分)`を押す。→ **200**。`expenses:read`があるため。staff.siosが申請した2件が返る。
 2. `POST 経費を申請する`を押す。→ **403**。レスポンスの`required`と`granted`を見比べる。申請に必要な`expenses:write`が、このトークンには無い。
-3. `GET 承認待ちの一覧`を押す。→ **403**。`expenses:approve`もロール`my-admin-role`も無い。
+3. `GET 承認待ちの一覧`を押す。→ **403**。`expenses:approve`も、課長以上のロール`my-manager-role`も無い。
 
 ### 体験3: スコープを増やして、申請する
 
 1. [ログアウト]を押す。(RPとKeycloakの両方のセッションが終了する)
-2. `経費申請アプリ`、optionalスコープに**チェックを入れて**、`staff.sios`でログインする。同意画面に「経費を申請する(`expenses:write`)」が増える。
+2. `経費申請アプリ`、`expenses:write`に**チェックを入れて**、`staff.sios`でログインする。同意画面に「経費を申請する(`expenses:write`)」が増える。
 3. `POST 経費を申請する`を押す。→ **201**。申請中の経費が作成される。
 4. `GET 経費の一覧(自分の分)`を押す。→ **200**。申請した経費が増えている(3件)。
 
-### 体験4: 上長として承認する(スコープとロール)
+### 体験4: 課長と部長で、承認待ちの一覧と承認を試す(スコープとロール)
 
-1. ログアウトし、`経費承認アプリ`、optionalスコープに**チェックを入れて**、`staff.sios`(一般社員)でログインする。
-2. `GET 承認待ちの一覧`を押す。→ **403**。`granted`にスコープ`expenses:approve`はあるが、ロール`my-admin-role`が無い。
-   (アプリには承認を許しているが、ユーザーが承認者ではない)
-3. ログアウトし、同じアプリ、optionalスコープにチェックを入れて、`admin.sios`(上長)でログインする。
-4. `GET 承認待ちの一覧`を押す。→ **200**。申請中の経費が全員分返る。
-5. `POST 経費を承認する`を、IDを`1`にして押す。→ **200**。`status`が`承認済み`、`approvedBy`が`admin.sios`になる。
-6. もう一度`GET 承認待ちの一覧`を押すと、承認した経費が消えている。
+1. ログアウトし、`経費承認アプリ`、`expenses:approve`に**チェックを入れて**、`staff.sios`(平社員)でログインする。
+2. `GET 承認待ちの一覧`を押す。→ **403**。`granted`にスコープ`expenses:approve`はあるが、ロール`my-manager-role`が無い。
+   (アプリには承認を許しているが、ユーザーは課長以上ではない)
+3. ログアウトし、同じアプリ、`expenses:approve`にチェックを入れて、`taro.sios`(課長)でログインする。
+   [取得したトークンの中身]のロールに、`my-manager-role`と、含まれる`my-staff-role`が入っている。
+4. `GET 承認待ちの一覧`を押す。→ **200**。申請中の経費が全員分返る。(課長以上は一覧を見られる)
+5. `POST 経費を承認する`を、IDを`1`にして押す。→ **403**。`granted`のロールに`my-admin-role`が無い。
+   (課長は一覧を見られるが、承認は部長だけ)
+6. ログアウトし、同じアプリ、`expenses:approve`にチェックを入れて、`admin.sios`(部長)でログインする。
+   [取得したトークンの中身]のロールに、`my-admin-role`、`my-manager-role`、`my-staff-role`の3つが入っている。(複合ロール)
+7. `POST 経費を承認する`を、IDを`1`にして押す。→ **200**。`status`が`承認済み`、`approvedBy`が`admin.sios`になる。
+8. `GET 承認待ちの一覧`を押すと、承認した経費が消えている。
 
-### 体験5: アプリの違いを見る
+### 体験5: アプリの違いを見る(Keycloakがスコープを決める)
 
-ロールが同じ「上長」でも、アプリとスコープで結果が変わる。
+スコープを付与するか拒否するかは、RPではなくKeycloakのクライアント設定で決まる。
 
-1. ログアウトし、`経費申請アプリ`、optionalスコープにチェックを入れて、`admin.sios`(上長)でログインする。
-2. `GET 承認待ちの一覧`を押す。→ **403**。ロール`my-admin-role`はあるが、スコープ`expenses:approve`が無い。
-   申請アプリには「承認」を許していない(Keycloakで`expenses:approve`を割り当てていない)ため、上長でも要求できない。
-3. ログアウトし、`経費承認アプリ`、optionalスコープのチェックを**外して**、`admin.sios`でログインする。
-4. `GET 承認待ちの一覧`を押す。→ **403**。ロールはあるが、スコープ`expenses:approve`を要求していない。
+1. ログアウトし、`経費申請アプリ`、`expenses:approve`にチェックを入れて、[Keycloakでログイン]を押す。
+2. Keycloakのログイン画面は出ず、RPに戻って「ログインに失敗した」と表示される。`error: invalid_scope`、`Invalid scopes: openid expenses:approve`。
+   申請アプリには`expenses:approve`を割り当てていない(Keycloakが許していない)ため、ユーザーが誰でも、ログイン自体が拒否される。
+   [通信のトレース]の「2. Keycloakから戻る」にも、同じエラーが表示される。
+3. `経費承認アプリ`に変えて、`expenses:write`にチェックを入れてログインする。→ 同じく`invalid_scope`。承認アプリには`expenses:write`を割り当てていない。
+4. `経費申請アプリ`、`expenses:write`にチェックを入れて、`admin.sios`(部長)でログインする。→ ログインできる。
+5. `GET 承認待ちの一覧`を押す。→ **403**。ロール`my-manager-role`はあるが、スコープ`expenses:approve`が無い。
+   部長でも、申請アプリでは承認を要求できない。
+6. ログアウトし、`経費承認アプリ`、チェックは**どちらも外して**、`admin.sios`でログインする。
+7. `GET 承認待ちの一覧`を押す。→ **403**。ロールはあるが、スコープ`expenses:approve`を要求していない。
 
 ### まとめ(期待される結果)
 
 承認に関するAPIは、スコープとロールの**両方**が必要。「このアプリに許したか(スコープ)」と「このユーザーに許されているか(ロール)」の両方を満たす必要がある。
+ロールは、平社員 < 課長 < 部長の3段階。承認待ちの一覧は課長以上、承認は部長だけ。
 
-| アプリ | optionalスコープ | ユーザー   | 一覧 | 申請 | 承認待ち/承認 | 拒否の理由                                  |
-|--------|-------------------|------------|------|------|---------------|-------------------------------------------|
-| 申請   | なし              | staff.sios | 200  | 403  | 403           | writeスコープ無し、approveスコープ無し、ロール不足 |
-| 申請   | あり(write)      | staff.sios | 200  | 201  | 403           | approveスコープ無し、ロール不足               |
-| 申請   | あり(write)      | admin.sios | 200  | 201  | 403           | approveスコープ無し(アプリの限界)           |
-| 承認   | なし              | admin.sios | 200  | 403  | 403           | approveスコープ無し                         |
-| 承認   | あり(approve)    | staff.sios | 200  | 403  | 403           | ロール不足(ユーザーの限界)                  |
-| 承認   | あり(approve)    | admin.sios | 200  | 403  | 200           | -                                         |
-| 承認   | あり(approve)    | taro.sios  | 200  | 403  | 200           | -(adminとstaffの両方のロール)          |
+| アプリ | optionalスコープ | ユーザー         | 一覧 | 申請 | 承認待ち | 承認 | 拒否の理由                                       |
+|--------|-------------------|------------------|------|------|----------|------|--------------------------------------------------|
+| 申請   | なし              | staff.sios(平社員) | 200  | 403  | 403      | 403  | write/approveスコープ無し、ロール不足              |
+| 申請   | あり(write)      | staff.sios(平社員) | 200  | 201  | 403      | 403  | approveスコープ無し、ロール不足                    |
+| 申請   | あり(write)      | admin.sios(部長)   | 200  | 201  | 403      | 403  | approveスコープ無し(申請アプリには割り当てていない)  |
+| 申請   | あり(approve)    | 誰でも           | -    | -    | -        | -    | **ログインが拒否される**(invalid_scope)             |
+| 承認   | あり(write)      | 誰でも           | -    | -    | -        | -    | **ログインが拒否される**(invalid_scope)             |
+| 承認   | なし              | admin.sios(部長)   | 200  | 403  | 403      | 403  | approveスコープ無し                               |
+| 承認   | あり(approve)    | staff.sios(平社員) | 200  | 403  | 403      | 403  | ロール不足(課長以上ではない)                      |
+| 承認   | あり(approve)    | taro.sios(課長)    | 200  | 403  | 200      | 403  | 承認はロール不足(部長のみ)                        |
+| 承認   | あり(approve)    | admin.sios(部長)   | 200  | 403  | 200      | 200  | -                                                |
 
-(表の「申請」「承認」はアプリ。「申請」列は`POST /apis/expenses`の結果)
+(表の「申請」「承認」はアプリ。「申請」列は`POST /apis/expenses`、「承認」列は`POST /apis/expenses/{id}/approve`の結果)
 
 ### 興味のある人向け: 仕組みを読む
 
@@ -419,16 +445,17 @@ RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`
 | 403のときに理由を返す処理                      | `webapp/resource-server/.../controller/ForbiddenAdvice.java`                        |
 | 宛先(aud)の検証                                | `webapp/resource-server/src/main/resources/application.yaml`の`audiences`          |
 | 条件の組み合わせごとのテスト                   | `webapp/resource-server/src/test/.../AccessControlTests.java`                       |
-| Keycloak側の設定(スコープ、audience、クライアント、ロール)  | `setup/step02〜step08`                                                              |
+| Keycloak側の設定(スコープ、audience、クライアント、ロール、グループ)  | `setup/step02〜step10`                                                              |
 
 試してみること:
-- `ExpenseController`の`@PreAuthorize`を変更し(例: `my-admin-role`を`my-staff-role`に)、以下で反映して、結果の違いを見る。
+- `ExpenseController`の`@PreAuthorize`を変更し(例: `my-admin-role`を`my-manager-role`に)、以下で反映して、結果の違いを見る。
     $ cd container && docker compose restart resource-server
 - RSを直接呼ぶと、アクセストークンが無いので401になる。レスポンスの`WWW-Authenticate`も見る。
     $ curl -i http://localhost:8111/apis/whoami
-- Keycloak管理画面で、`staff.sios`にロール`my-admin-role`を付与して(Users > staff.sios > Role mapping)、再ログインすると承認できるようになる。
+- Keycloak管理画面で、`staff.sios`を課長のグループ`my-manager-grp`に所属させて(Users > staff.sios > Groups)、再ログインすると承認待ちの一覧が見られるようになる。
+- Keycloak管理画面 > Realm roles > `my-admin-role` > [Associated roles] で、部長のロールが課長と平社員のロールを含んでいること(複合ロール)を確認する。
 - Keycloak管理画面 > Clients > app-expense-claim > [Client scopes] で、`expenses:write`を Optional から Default に変えると、チェックの有無にかかわらず付与される。
-- Keycloak管理画面 > Clients > app-expense-claim > [Client scopes] で、`expenses:approve`を Optional として追加すると、申請アプリからも承認を要求できるようになる。
+- Keycloak管理画面 > Clients > app-expense-claim > [Client scopes] で、`expenses:approve`を Optional として追加すると、申請アプリで`expenses:approve`を要求してもエラーにならず、付与される。(何を許すかはKeycloakの設定で決まる)
 - `webapp/resource-server/src/main/resources/application.yaml`の`audiences`を別の値(例: `other-api`)に変えて、RSを再起動する。すべてのAPIが401になる。(宛先が違うトークンは受け付けない)
 
 ### トラブルシュート

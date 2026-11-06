@@ -44,13 +44,22 @@ public class RelyingPartyController {
 	private static final String LOGOUT_PATH = "/protocol/openid-connect/logout";
 
 	// Keycloakに登録済みのクライアント(アプリ)。
-	// expenses:read は default scope(常に付く)、optionalScope は要求したときだけ付く
-	record ClientInfo(String id, String label, String optionalScope) {
+	// どのスコープを許すかはクライアントごとにKeycloak側で決まっており、RPはここでは判断しない。
+	record ClientInfo(String id, String label) {
 	}
 
 	private static final List<ClientInfo> CLIENTS = List.of(
-		new ClientInfo("app-expense-claim", "経費申請アプリ", "expenses:write"),
-		new ClientInfo("app-expense-approval", "経費承認アプリ", "expenses:approve"));
+		new ClientInfo("app-expense-claim", "経費申請アプリ"),
+		new ClientInfo("app-expense-approval", "経費承認アプリ"));
+
+	// 画面で選べるoptional scope。どのアプリでも自由に要求できる。
+	// アプリに割り当てていないスコープを要求すると、Keycloakがエラー(invalid_scope)で拒否する。
+	// (expenses:read はdefault scopeなので、要求しなくても常に付く)
+	private static final List<String> OPTIONAL_SCOPES = List.of("expenses:write", "expenses:approve");
+
+	// ログインに失敗してKeycloakから戻ってきたときの理由
+	public record LoginError(String error, String description, String hint) {
+	}
 
 	record Api(String label, String method, String path, String rule, String body) {
 		public boolean needsId() {
@@ -63,8 +72,8 @@ public class RelyingPartyController {
 		new Api("経費の一覧(自分の分)", "GET", "/apis/expenses", "スコープ expenses:read", null),
 		new Api("経費を申請する", "POST", "/apis/expenses", "スコープ expenses:write",
 			"{\"title\":\"出張宿泊費\",\"amount\":9800}"),
-		new Api("承認待ちの一覧", "GET", "/apis/expenses/pending", "スコープ expenses:approve かつ ロール my-admin-role", null),
-		new Api("経費を承認する", "POST", "/apis/expenses/{id}/approve", "スコープ expenses:approve かつ ロール my-admin-role", null));
+		new Api("承認待ちの一覧", "GET", "/apis/expenses/pending", "スコープ expenses:approve かつ ロール my-manager-role(課長以上)", null),
+		new Api("経費を承認する", "POST", "/apis/expenses/{id}/approve", "スコープ expenses:approve かつ ロール my-admin-role(部長)", null));
 
 	private record Http(int status, String body) {
 	}
@@ -116,7 +125,10 @@ public class RelyingPartyController {
 		// ログイン時に選んだ内容をフォームに復元する。未ログインやログアウト後は初期状態(先頭のアプリ、チェックなし)
 		Object selected = session.getAttribute("clientId");
 		model.addAttribute("selectedClient", selected != null ? selected : CLIENTS.get(0).id());
-		model.addAttribute("selectedOptional", Boolean.TRUE.equals(session.getAttribute("optionalRequested")));
+		model.addAttribute("optionalScopes", OPTIONAL_SCOPES);
+		model.addAttribute("selectedScopes", session.getAttribute("requestedScopes") != null
+			? session.getAttribute("requestedScopes") : List.of());
+		model.addAttribute("loginError", session.getAttribute("loginError"));
 		model.addAttribute("apis", APIS);
 		model.addAttribute("steps", steps(session));
 		List<CallResult> calls = calls(session);
@@ -136,12 +148,15 @@ public class RelyingPartyController {
 	// ---- 1. 認可リクエスト ------------------------------------------------------------------
 
 	@PostMapping("/login")
-	String login(@RequestParam String client, @RequestParam(required = false) String optional,
+	String login(@RequestParam String client,
+			@RequestParam(name = "scope", required = false) List<String> optionalScopes,
 			HttpSession session) {
 		ClientInfo selected = CLIENTS.stream().filter(c -> c.id().equals(client)).findFirst().orElse(CLIENTS.get(0));
 		String clientId = selected.id();
-		// expenses:read はdefault scopeなので指定しなくても付く。optional scopeは明示して要求する
-		String scope = "openid" + (optional != null ? " " + selected.optionalScope() : "");
+		// 画面で選んだoptional scopeを、アプリを問わずそのまま要求する。付与するか拒否するかはKeycloakが決める
+		List<String> requested = OPTIONAL_SCOPES.stream()
+			.filter(s -> optionalScopes != null && optionalScopes.contains(s)).toList();
+		String scope = "openid" + requested.stream().map(s -> " " + s).reduce("", String::concat);
 
 		String state = Tokens.random(16);               // CSRF対策: 戻ってきたときに一致を確認する
 		String nonce = Tokens.random(16);               // リプレイ対策: IDトークンに入って戻ってくる
@@ -152,8 +167,9 @@ public class RelyingPartyController {
 		for (String key : List.of("accessToken", "idToken", "accessClaims", "idClaims", "steps", "calls")) {
 			session.removeAttribute(key);
 		}
+		session.removeAttribute("loginError");
 		session.setAttribute("clientId", clientId);
-		session.setAttribute("optionalRequested", optional != null);
+		session.setAttribute("requestedScopes", requested);
 		session.setAttribute("state", state);
 		session.setAttribute("nonce", nonce);
 		session.setAttribute("verifier", verifier);
@@ -176,8 +192,22 @@ public class RelyingPartyController {
 			"1. 認可リクエスト(ブラウザ → Keycloak)",
 			"RPはブラウザをKeycloakのログイン画面へ移動させる。どのアプリが(client_id)、何を許してほしいか(scope)を伝える。",
 			"GET " + browserUrl + AUTH_PATH + "\n" + lines(params),
-			"(Keycloakのログイン画面と、同意画面が表示される)"));
+			"(この応答はブラウザとKeycloakの間でやり取りされるため、RPには見えない。結果は、ブラウザがRPに戻ってきたときに分かる)"));
 		return "redirect:" + authUrl;
+	}
+
+	// 1の応答は、ブラウザとKeycloakの間のやり取りでRPには見えない。
+	// ブラウザがRPに戻ってきたときの内容から、何が起きたかを補って表示する。
+	private void completeStep1(List<Step> steps, boolean failed, Map<String, String> returned) {
+		if (steps.isEmpty() || !steps.get(0).title().startsWith("1.")) {
+			return;
+		}
+		Step first = steps.get(0);
+		String screen = failed
+			? "ログイン画面は表示されなかった(Keycloakがリクエストをエラーと判断した)"
+			: "Keycloakのログイン画面と同意画面が表示され、ユーザーが操作した";
+		String response = "HTTP 302 Found\nLocation: " + redirectUri + "\n" + lines(returned);
+		steps.set(0, new Step(first.title(), first.note(), first.request(), screen, response));
 	}
 
 	// ---- 2. Keycloakから戻る → 3. トークン交換 → 4. IDトークンの検証 -----------------------------
@@ -195,13 +225,22 @@ public class RelyingPartyController {
 		if (state != null) returned.put("state", state);
 		if (error != null) returned.put("error", error);
 		if (errorDescription != null) returned.put("error_description", errorDescription);
+		completeStep1(steps, error != null, returned);
 		steps.add(new Step(
 			"2. Keycloakから戻る(ブラウザ → RP)",
-			"ログインと同意が済むと、認可コード(code)を付けてRPに戻ってくる。codeはまだ「引換券」で、APIは呼べない。",
+			error != null
+				? "Keycloakが返したエラー(上の1の応答の302)に従って、ブラウザがRPに戻ってきた。codeは付かず、エラーの内容だけが付いている。"
+				: "ログインと同意が済むと、認可コード(code)を付けてRPに戻ってくる。codeはまだ「引換券」で、APIは呼べない。",
 			"GET " + redirectUri + "\n" + lines(returned),
-			"(RPはこのcodeをトークンに交換する)"));
+			error != null ? "(エラーのため、トークンには交換しない)" : "(RPはこのcodeをトークンに交換する)"));
 
 		if (error != null) {
+			// 失敗の理由を画面の上部に表示する
+			String hint = "invalid_scope".equals(error)
+				? "選んだアプリに割り当てられていないスコープを要求したため、Keycloakがログインを拒否した。"
+					+ "アプリを変えるか、要求するスコープを見直す。"
+				: null;
+			session.setAttribute("loginError", new LoginError(error, errorDescription, hint));
 			return "redirect:/";
 		}
 		if (code == null || !Objects.equals(state, session.getAttribute("state"))) {

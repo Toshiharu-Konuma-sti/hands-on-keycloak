@@ -54,6 +54,21 @@ run_assign_opt_client_scope_to_client()
 }
 # }}}
 
+# {{{ run_assign_composite_role()
+# $1: Admin REST API Host
+# $2: access token
+# $3: realm
+# $4: json of roles
+# $5: the higher role's name (it will include the lower role)
+# $6: the lower role's name to include
+run_assign_composite_role()
+{
+	HIGH_ID=$(call_extract_id_from_json "$4" "name" $5)
+	LOW_ID=$(call_extract_id_from_json "$4" "name" $6)
+	call_assign_composite_role_to_role $1 $2 $3 $HIGH_ID $LOW_ID $6
+}
+# }}}
+
 # {{{ run_assign_realm_role_to_group()
 # $1: Admin REST API Host
 # $2: access token

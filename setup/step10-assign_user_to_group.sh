@@ -20,10 +20,10 @@ JSON_USR=$(call_get_users $KC_URL $AC_TOKEN $MY_REALM)
 
 echo "\n### START: Assign a user to a group ##########"
 run_assign_user_to_group \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-admin-grp" "admin.sios"
-run_assign_user_to_group \
 	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-staff-grp" "staff.sios"
 run_assign_user_to_group \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-flat-grp" "taro.sios"
+	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-manager-grp" "taro.sios"
+run_assign_user_to_group \
+	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-admin-grp" "admin.sios"
 
 call_show_finish_banner

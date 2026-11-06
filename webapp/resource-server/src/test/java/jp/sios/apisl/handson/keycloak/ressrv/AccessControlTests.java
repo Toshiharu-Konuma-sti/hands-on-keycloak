@@ -77,35 +77,47 @@ class AccessControlTests {
 	}
 
 	@Test
-	void pending_needsScopeAndRole() throws Exception {
+	void pending_needsScopeAndManagerRole() throws Exception {
+		// 課長のトークン: 課長と平社員のロール
 		mvc.perform(get("/apis/expenses/pending")
-				.with(token("admin.sios", "SCOPE_expenses:approve", "ROLE_my-admin-role")))
+				.with(token("taro.sios", "SCOPE_expenses:approve", "ROLE_my-manager-role", "ROLE_my-staff-role")))
+			.andExpect(status().isOk());
+		// 部長のトークン: すべてのロール(複合ロールで展開済み)
+		mvc.perform(get("/apis/expenses/pending")
+				.with(token("admin.sios", "SCOPE_expenses:approve",
+					"ROLE_my-admin-role", "ROLE_my-manager-role", "ROLE_my-staff-role")))
 			.andExpect(status().isOk());
 	}
 
 	@Test
-	void pendingWithScopeButWithoutRole_403() throws Exception {
+	void pendingWithScopeButAsStaff_403() throws Exception {
 		mvc.perform(get("/apis/expenses/pending")
 				.with(token("staff.sios", "SCOPE_expenses:approve", "ROLE_my-staff-role")))
 			.andExpect(status().isForbidden());
 	}
 
 	@Test
-	void pendingWithRoleButWithoutScope_403() throws Exception {
+	void pendingWithManagerRoleButWithoutScope_403() throws Exception {
 		mvc.perform(get("/apis/expenses/pending")
-				.with(token("admin.sios", "SCOPE_expenses:read", "ROLE_my-admin-role")))
+				.with(token("taro.sios", "SCOPE_expenses:read", "ROLE_my-manager-role", "ROLE_my-staff-role")))
 			.andExpect(status().isForbidden());
 	}
 
 	@Test
-	void approve_needsScopeAndRole() throws Exception {
+	void approve_needsScopeAndAdminRole() throws Exception {
 		mvc.perform(post("/apis/expenses/1/approve").with(csrf())
-				.with(token("admin.sios", "SCOPE_expenses:approve", "ROLE_my-admin-role")))
+				.with(token("admin.sios", "SCOPE_expenses:approve",
+					"ROLE_my-admin-role", "ROLE_my-manager-role", "ROLE_my-staff-role")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("承認済み"))
 			.andExpect(jsonPath("$.approvedBy").value("admin.sios"));
+	}
+
+	@Test
+	void approveAsManager_403() throws Exception {
+		// 課長は一覧は見られるが、承認はできない
 		mvc.perform(post("/apis/expenses/1/approve").with(csrf())
-				.with(token("staff.sios", "SCOPE_expenses:approve", "ROLE_my-staff-role")))
+				.with(token("taro.sios", "SCOPE_expenses:approve", "ROLE_my-manager-role", "ROLE_my-staff-role")))
 			.andExpect(status().isForbidden());
 	}
 }

@@ -20,12 +20,10 @@ JSON_ROL=$(call_get_realm_roles $KC_URL $AC_TOKEN $MY_REALM)
 
 echo "\n### START: Assign a realm rols to a group ##########"
 run_assign_realm_role_to_group \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-admin-grp" "my-admin-role"
-run_assign_realm_role_to_group \
 	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-staff-grp" "my-staff-role"
 run_assign_realm_role_to_group \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-flat-grp" "my-admin-role"
+	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-manager-grp" "my-manager-role"
 run_assign_realm_role_to_group \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-flat-grp" "my-staff-role"
+	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-admin-grp" "my-admin-role"
 
 call_show_finish_banner

@@ -78,9 +78,12 @@ public class ExpenseController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(created);
 	}
 
-	// 承認に関するAPIは、スコープ と ロール の両方を満たしたときだけ許可する
+	// 承認に関するAPIは、スコープ と ロール の両方を満たしたときだけ許可する。
+	// ロールは「平社員(my-staff-role) < 課長(my-manager-role) < 部長(my-admin-role)」の3段階。
+	// 上位のロールは下位を含む(Keycloakの複合ロール)ため、部長のトークンにはすべてのロールが入っている。
+	// 承認待ちの一覧は課長以上、経費の承認は部長だけ。
 	@GetMapping("/expenses/pending")
-	@PreAuthorize("hasAuthority('SCOPE_expenses:approve') and hasRole('my-admin-role')")
+	@PreAuthorize("hasAuthority('SCOPE_expenses:approve') and hasRole('my-manager-role')")
 	public List<Expense> pending() {
 		return expenses.values().stream()
 			.filter(e -> e.status().equals("申請中"))

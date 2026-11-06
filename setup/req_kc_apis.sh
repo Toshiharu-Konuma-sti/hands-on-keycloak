@@ -309,6 +309,24 @@ call_get_realm_roles_in_group()
 }
 # }}}
 
+# {{{ call_assign_composite_role_to_role()
+# $1: Admin REST API Host
+# $2: access token
+# $3: realm's name
+# $4: role's id of the higher role (it will include the lower role)
+# $5: role's id of the lower role to include
+# $6: role's name of the lower role to include
+call_assign_composite_role_to_role()
+{
+	JSON="[{\"id\": \"$5\", \"name\": \"$6\"}]"
+	curl -v POST \
+		"$1/admin/realms/$3/roles-by-id/$4/composites" \
+		-H "Authorization: Bearer $2" \
+		-H "Content-Type: application/json" \
+		-d "$JSON"
+}
+# }}}
+
 # {{{ call_create_user()
 # $1: Admin REST API Host
 # $2: access token
