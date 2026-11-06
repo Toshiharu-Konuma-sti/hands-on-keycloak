@@ -8,11 +8,17 @@
 <body>
 
 <h1>Relying Party (RP)</h1>
-<p class="note">
+<p class="note" style="margin-bottom:0">
 	IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れを体験する。
-	このアプリは「経費精算」を題材にしている。申請アプリと承認アプリ、一般社員(staff.sios)・課長(taro.sios)・部長(admin.sios)を切り替えて試す。
-	<b>スコープ</b>は「アプリ(RP)に許した操作」、<b>ロール</b>は「ユーザーに与えられた役割」。
-	APIは、その両方を見て許可するかを決める。
+</p>
+<ul class="note">
+	<li><b>目的</b>: <b>スコープ</b>(アプリ(RP)に許した操作)と、<b>ロール</b>(ユーザーに与えられた役割)が、APIの許可・拒否にどう関わるかを体験して学ぶ。</li>
+	<li><b>題材</b>: 「経費精算」。経費のデータは動作確認用のサンプルで、実際の経費管理はしない。</li>
+	<li><b>操作</b>: アプリ(経費申請アプリ / 経費承認アプリ)と、ユーザー(一般社員 staff.sios / 課長 taro.sios / 部長 admin.sios)を切り替えて、APIを呼ぶ。</li>
+	<li><b>見るところ</b>: APIが許可(200)されるか、拒否(403)されるか。拒否の理由は、スコープ不足か、ロール不足か。</li>
+</ul>
+<p class="note">
+	APIは、スコープとロールの両方を見て許可するかを決める。
 </p>
 
 <section>
