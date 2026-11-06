@@ -1,5 +1,9 @@
 server:
   port: 8222
+  servlet:
+    session:
+      # 初回アクセス時に、URLへ ;jsessionid=... が付かないようにする
+      tracking-modes: cookie
 
 spring:
   application:

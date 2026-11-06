@@ -78,7 +78,7 @@ class AccessControlTests {
 
 	@Test
 	void pending_needsScopeAndManagerRole() throws Exception {
-		// 課長のトークン: 課長と平社員のロール
+		// 課長のトークン: 課長と一般社員のロール
 		mvc.perform(get("/apis/expenses/pending")
 				.with(token("taro.sios", "SCOPE_expenses:approve", "ROLE_my-manager-role", "ROLE_my-staff-role")))
 			.andExpect(status().isOk());

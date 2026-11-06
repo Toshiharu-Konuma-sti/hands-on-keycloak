@@ -1,0 +1,35 @@
+body { font-family: sans-serif; max-width: 1000px; margin: 1em auto; padding: 0 1em; color: #222; }
+h1 { font-size: 1.4em; } h2 { font-size: 1.1em; border-bottom: 2px solid #4a7; padding-bottom: .2em; margin-top: 1.6em; }
+section { margin-bottom: 1em; }
+pre { background: #f4f4f4; padding: .6em; overflow-x: auto; margin: .3em 0; font-size: .85em; }
+table { border-collapse: collapse; } th, td { border: 1px solid #ccc; padding: .3em .7em; text-align: left; vertical-align: top; }
+th { background: #eee; }
+table.compact th, table.compact td { padding: .15em .5em; }
+table.compact .tag { font-size: 1em; }
+button { min-width: 8em; padding: .5em 1.4em; border: none; border-radius: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; font-size: .95em; font-weight: 600; cursor: pointer; box-shadow: 0 4px 0 #4f3a7a, 0 6px 10px rgba(79, 58, 122, .35); transition: transform .08s ease, box-shadow .08s ease, filter .2s ease; }
+button:hover { filter: brightness(1.08); }
+/* 押し込まれる表現: 本体を下げ、下の影を縮める */
+button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #4f3a7a, 0 2px 4px rgba(79, 58, 122, .35); }
+button:disabled { opacity: .6; cursor: default; }
+.api form.api-form { display: block; }
+.api form.api-form button { width: 100%; }
+.note { color: #555; font-size: .9em; }
+.tag { display: inline-block; background: #e3f1ea; border: 1px solid #9c9; border-radius: 3px; padding: 0 .4em; margin: .1em; font-size: .9em; }
+.role { background: #fdeccd; border-color: #db8; }
+details { border: 1px solid #ccc; border-radius: 4px; padding: .3em .7em; margin: .4em 0; }
+summary { cursor: pointer; font-weight: bold; }
+form.inline { display: inline; }
+.api-list { display: grid; grid-template-columns: max-content max-content 1fr; gap: .7em 1em; align-items: center; margin: .4em 0 .8em; }
+.api { display: contents; }
+.api code input { width: 3.5em; font: inherit; }
+.error { border-left: 6px solid #c43; background: #fdf0ee; padding: .4em .8em; margin: .6em 0; }
+ul.note { margin: .3em 0 0; padding-left: 1.4em; }
+ul.token-summary { margin: .2em 0 .8em; padding-left: 1.4em; }
+ul.token-summary li { margin: .2em 0; }
+.badge { display: inline-block; min-width: 2.4em; text-align: center; border-radius: 3px; padding: 0 .4em; color: #fff; font-weight: bold; }
+.badge.ok { background: #2a7; } .badge.ng { background: #c43; }
+.result { border-left: 6px solid #ccc; padding: .2em .8em; margin: .6em 0; background: #fafafa; }
+.result.ok { border-left-color: #2a7; } .result.ng { border-left-color: #c43; }
+.result h3 { font-size: 1em; margin: .4em 0; }
+.flash { animation: flash 1s ease-out; }
+@keyframes flash { from { background: #fff3b0; } to { background: #fafafa; } }

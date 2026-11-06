@@ -3,40 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>Relying Party</title>
-<style>
-	body { font-family: sans-serif; max-width: 1000px; margin: 1em auto; padding: 0 1em; color: #222; }
-	h1 { font-size: 1.4em; } h2 { font-size: 1.1em; border-bottom: 2px solid #4a7; padding-bottom: .2em; margin-top: 1.6em; }
-	section { margin-bottom: 1em; }
-	pre { background: #f4f4f4; padding: .6em; overflow-x: auto; margin: .3em 0; font-size: .85em; }
-	table { border-collapse: collapse; } th, td { border: 1px solid #ccc; padding: .3em .7em; text-align: left; vertical-align: top; }
-	th { background: #eee; }
-	button { padding: .35em .9em; cursor: pointer; }
-	.note { color: #555; font-size: .9em; }
-	.tag { display: inline-block; background: #e3f1ea; border: 1px solid #9c9; border-radius: 3px; padding: 0 .4em; margin: .1em; font-size: .9em; }
-	.role { background: #fdeccd; border-color: #db8; }
-	details { border: 1px solid #ccc; border-radius: 4px; padding: .3em .7em; margin: .4em 0; }
-	summary { cursor: pointer; font-weight: bold; }
-	form.inline { display: inline; }
-	.api { margin: .3em 0; }
-	.error { border-left: 6px solid #c43; background: #fdf0ee; padding: .4em .8em; margin: .6em 0; }
-	ul.note { margin: .3em 0 0; padding-left: 1.4em; }
-	ul.token-summary { margin: .2em 0 .8em; padding-left: 1.4em; }
-	ul.token-summary li { margin: .2em 0; }
-	.badge { display: inline-block; min-width: 2.4em; text-align: center; border-radius: 3px; padding: 0 .4em; color: #fff; font-weight: bold; }
-	.badge.ok { background: #2a7; } .badge.ng { background: #c43; }
-	.result { border-left: 6px solid #ccc; padding: .2em .8em; margin: .6em 0; background: #fafafa; }
-	.result.ok { border-left-color: #2a7; } .result.ng { border-left-color: #c43; }
-	.result h3 { font-size: 1em; margin: .4em 0; }
-	.flash { animation: flash 1s ease-out; }
-	@keyframes flash { from { background: #fff3b0; } to { background: #fafafa; } }
-</style>
+<link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
 
 <h1>Relying Party (RP)</h1>
 <p class="note">
 	IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れを体験する。
-	このアプリは「経費精算」を題材にしている。申請アプリと承認アプリ、平社員(staff.sios)・課長(taro.sios)・部長(admin.sios)を切り替えて試す。
+	このアプリは「経費精算」を題材にしている。申請アプリと承認アプリ、一般社員(staff.sios)・課長(taro.sios)・部長(admin.sios)を切り替えて試す。
 	<b>スコープ</b>は「アプリ(RP)に許した操作」、<b>ロール</b>は「ユーザーに与えられた役割」。
 	APIは、その両方を見て許可するかを決める。
 </p>
@@ -51,18 +25,19 @@
 			</label>
 		</p>
 		<div>
-			要求するoptionalスコープ(アプリに関係なく、自由に選べる):
+			追加で要求するoptionalスコープ:
 			<label th:each="s : ${optionalScopes}" style="margin-right:1em">
 				<input type="checkbox" name="scope" th:value="${s}" th:checked="${selectedScopes.contains(s)}"> <code th:text="${s}"></code>
 			</label>
 			<ul class="note">
-				<li><code>expenses:read</code> は default scope のため、要求しなくても常に付与される。</li>
-				<li><code>expenses:write</code> / <code>expenses:approve</code> は optional scope のため、要求したときだけ付与される。</li>
-				<li>Keycloakの設定: 申請アプリには write、承認アプリには approve だけを割り当てている。</li>
-				<li>アプリに割り当てていないスコープを要求すると、Keycloakがエラー(<code>invalid_scope</code>)で拒否する。</li>
+				<li><code>expenses:read</code> は default scope のため、要求しなくても常に付与</li>
+				<li><code>expenses:write</code> / <code>expenses:approve</code> は optional scope のため、要求したときだけ付与</li>
+				<li>Keycloakのアプリ設定では、<code>expenses:write</code> を経費申請アプリに、<code>expenses:approve</code> を経費承認アプリに割り当て</li>
+				<li>アプリに割り当てていないスコープを要求すると、Keycloakがエラー(<code>invalid_scope</code>)で拒否</li>
 			</ul>
 		</div>
-		<button type="submit">Keycloakでログイン</button>
+		<button type="submit">ログイン</button>
+		<span class="note">Keycloakでログイン</span>
 	</form>
 	<div class="error" th:if="${loginError != null}">
 		<b>ログインに失敗した(Keycloakからのエラー)</b>
@@ -71,15 +46,15 @@
 		<div th:if="${loginError.hint() != null}" th:text="${loginError.hint()}"></div>
 	</div>
 	<form method="post" th:action="@{/logout}" th:if="${loggedIn}" style="margin-top:.6em">
-		<button type="submit">ログアウト(Keycloakのセッションも終了)</button>
-		<span class="note">(ログアウトすると、この画面は初期状態に戻る)</span>
+		<button type="submit">ログアウト</button>
+		<span class="note">Keycloakのセッションを終了し、画面は初期状態に戻る</span>
 	</form>
 	<p class="note" style="margin-bottom:.3em">ログインするユーザー(パスワードはユーザー名と同じ)と、付与されるロール:</p>
-	<table>
+	<table class="note compact">
 		<tr><th>ユーザー</th><th>役職</th><th>付与されるロール(上位のロールは下位を含む)</th></tr>
-		<tr><td>staff.sios</td><td>平社員</td><td><span class="tag role">my-staff-role</span></td></tr>
-		<tr><td>taro.sios</td><td>課長</td><td><span class="tag role">my-manager-role</span> + 平社員のロール(my-staff-role)</td></tr>
-		<tr><td>admin.sios</td><td>部長</td><td><span class="tag role">my-admin-role</span> + 課長と平社員のロール(my-manager-role, my-staff-role)</td></tr>
+		<tr><td>staff.sios</td><td>一般社員</td><td><span class="tag role">my-staff-role</span></td></tr>
+		<tr><td>taro.sios</td><td>課長</td><td><span class="tag role">my-manager-role</span> + 一般社員のロール(<span class="tag role">my-staff-role</span>)</td></tr>
+		<tr><td>admin.sios</td><td>部長</td><td><span class="tag role">my-admin-role</span> + 課長と一般社員のロール(<span class="tag role">my-manager-role</span>, <span class="tag role">my-staff-role</span>)</td></tr>
 	</table>
 </section>
 
@@ -109,14 +84,17 @@
 		<li>スコープ: <span class="tag" th:each="s : ${scopes}" th:text="${s}"></span></li>
 		<li>ロール: <span class="tag role" th:each="r : ${roles}" th:text="${r}"></span></li>
 	</ul>
-	<div class="api" th:each="a : ${apis}">
-		<form class="inline api-form" method="post" th:action="@{/call}">
-			<input type="hidden" name="method" th:value="${a.method()}">
-			<input type="hidden" name="path" th:value="${a.path()}">
-			<input type="number" name="id" value="1" min="1" style="width:4em" th:if="${a.needsId()}" title="経費ID">
-			<button type="submit" th:text="${a.method() + ' ' + a.label()}"></button>
-		</form>
-		<span class="note" th:text="'必要な条件: ' + ${a.rule()}"></span>
+	<div class="api-list">
+		<div class="api" th:each="a, it : ${apis}">
+			<code th:unless="${a.needsId()}" th:text="${a.method() + ' ' + a.path()}"></code>
+			<code th:if="${a.needsId()}"><span th:text="${a.method() + ' ' + #strings.substringBefore(a.path(), '{id}')}"></span><input type="number" name="id" value="1" min="1" title="経費ID" th:attr="form='api-form-' + ${it.index}"><span th:text="${#strings.substringAfter(a.path(), '{id}')}"></span></code>
+			<form class="inline api-form" method="post" th:id="'api-form-' + ${it.index}" th:action="@{/call}">
+				<input type="hidden" name="method" th:value="${a.method()}">
+				<input type="hidden" name="path" th:value="${a.path()}">
+				<button type="submit" th:text="${a.label()}"></button>
+			</form>
+			<span class="note" th:text="'必要な条件: ' + ${a.rule()}"></span>
+		</div>
 	</div>
 	<p class="note">結果は、ボタンの下に表示される。200なら許可、403なら条件を満たしていない。(ページは読み直されない)</p>
 	<div th:replace="~{fragments :: apiResult}"></div>
@@ -127,35 +105,7 @@
 	<div th:replace="~{fragments :: trace}"></div>
 </section>
 
-<script>
-// API呼び出しとトレース消去は、ページ全体を読み直さず、結果欄とトレースだけを差し替える。
-// (ログイン/ログアウトはセッションが変わるため、従来どおりページ全体を読み直す)
-document.addEventListener('submit', async (event) => {
-	const form = event.target.closest('form.api-form');
-	if (!form) return;
-	event.preventDefault();
-	const button = form.querySelector('button');
-	button.disabled = true;
-	try {
-		const res = await fetch(form.action, {
-			method: 'POST',
-			headers: { 'X-Requested-With': 'fetch' },
-			body: new URLSearchParams(new FormData(form)),
-		});
-		const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
-		const fresh = ['api-result', 'trace'].map((id) => doc.getElementById(id));
-		if (fresh.includes(null)) {
-			location.reload();   // セッション切れなど。画面全体を読み直す
-			return;
-		}
-		fresh.forEach((node) => document.getElementById(node.id).replaceWith(node));
-	} catch (e) {
-		form.submit();       // fetchが使えないときは、従来どおりフォーム送信する
-	} finally {
-		button.disabled = false;
-	}
-});
-</script>
+<script th:src="@{/js/app.js}"></script>
 
 </body>
 </html>
