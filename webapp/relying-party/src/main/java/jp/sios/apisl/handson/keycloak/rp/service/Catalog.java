@@ -26,7 +26,7 @@ public class Catalog {
 		new Api("経費の一覧(自分の分)", "GET", "/apis/expenses", "スコープ expenses:read", null),
 		new Api("経費を申請する", "POST", "/apis/expenses", "スコープ expenses:write",
 			"{\"title\":\"出張宿泊費\",\"amount\":9800}"),
-		new Api("承認待ちの一覧", "GET", "/apis/expenses/pending", "スコープ expenses:approve かつ ロール my-manager-role(課長以上)", null),
+		new Api("承認待ちの一覧", "GET", "/apis/expenses/pending", "スコープ expenses:read かつ ロール my-manager-role(課長以上)", null),
 		new Api("経費を承認する", "POST", "/apis/expenses/{id}/approve", "スコープ expenses:approve かつ ロール my-admin-role(部長)", null));
 
 	public List<ClientInfo> clients() {

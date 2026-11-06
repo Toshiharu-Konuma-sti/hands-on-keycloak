@@ -1,3 +1,9 @@
+// アプリ(client_id)を切り替えたときは、要求するoptionalスコープのチェックをすべて外す
+document.addEventListener('change', (event) => {
+	if (!event.target.matches('input[type=radio][name=client]')) return;
+	document.querySelectorAll('input[type=checkbox][name=scope]').forEach((box) => { box.checked = false; });
+});
+
 // API呼び出しとトレース消去は、ページ全体を読み直さず、結果欄とトレースだけを差し替える。
 // (ログイン/ログアウトはセッションが変わるため、従来どおりページ全体を読み直す)
 document.addEventListener('submit', async (event) => {

@@ -86,14 +86,14 @@
 	</ul>
 	<div class="api-list">
 		<div class="api" th:each="a, it : ${apis}">
-			<code th:unless="${a.needsId()}" th:text="${a.method() + ' ' + a.path()}"></code>
-			<code th:if="${a.needsId()}"><span th:text="${a.method() + ' ' + #strings.substringBefore(a.path(), '{id}')}"></span><input type="number" name="id" value="1" min="1" title="経費ID" th:attr="form='api-form-' + ${it.index}"><span th:text="${#strings.substringAfter(a.path(), '{id}')}"></span></code>
 			<form class="inline api-form" method="post" th:id="'api-form-' + ${it.index}" th:action="@{/call}">
 				<input type="hidden" name="method" th:value="${a.method()}">
 				<input type="hidden" name="path" th:value="${a.path()}">
 				<button type="submit" th:text="${a.label()}"></button>
 			</form>
-			<span class="note" th:text="'必要な条件: ' + ${a.rule()}"></span>
+			<code th:unless="${a.needsId()}" th:text="${a.method() + ' ' + a.path()}"></code>
+			<code th:if="${a.needsId()}"><span th:text="${a.method() + ' ' + #strings.substringBefore(a.path(), '{id}')}"></span><input type="number" name="id" value="1" min="1" title="経費ID" th:attr="form='api-form-' + ${it.index}"><span th:text="${#strings.substringAfter(a.path(), '{id}')}"></span></code>
+			<span class="note rule" th:text="'必要な条件: ' + ${a.rule()}"></span>
 		</div>
 	</div>
 	<p class="note">結果は、ボタンの下に表示される。200なら許可、403なら条件を満たしていない。(ページは読み直されない)</p>

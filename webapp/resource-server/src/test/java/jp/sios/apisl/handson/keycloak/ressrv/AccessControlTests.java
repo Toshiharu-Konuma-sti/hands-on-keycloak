@@ -77,29 +77,29 @@ class AccessControlTests {
 	}
 
 	@Test
-	void pending_needsScopeAndManagerRole() throws Exception {
+	void pending_needsReadScopeAndManagerRole() throws Exception {
 		// 課長のトークン: 課長と一般社員のロール
 		mvc.perform(get("/apis/expenses/pending")
-				.with(token("taro.sios", "SCOPE_expenses:approve", "ROLE_my-manager-role", "ROLE_my-staff-role")))
+				.with(token("taro.sios", "SCOPE_expenses:read", "ROLE_my-manager-role", "ROLE_my-staff-role")))
 			.andExpect(status().isOk());
 		// 部長のトークン: すべてのロール(複合ロールで展開済み)
 		mvc.perform(get("/apis/expenses/pending")
-				.with(token("admin.sios", "SCOPE_expenses:approve",
+				.with(token("admin.sios", "SCOPE_expenses:read",
 					"ROLE_my-admin-role", "ROLE_my-manager-role", "ROLE_my-staff-role")))
 			.andExpect(status().isOk());
 	}
 
 	@Test
-	void pendingWithScopeButAsStaff_403() throws Exception {
+	void pendingWithReadScopeButAsStaff_403() throws Exception {
 		mvc.perform(get("/apis/expenses/pending")
-				.with(token("staff.sios", "SCOPE_expenses:approve", "ROLE_my-staff-role")))
+				.with(token("staff.sios", "SCOPE_expenses:read", "ROLE_my-staff-role")))
 			.andExpect(status().isForbidden());
 	}
 
 	@Test
-	void pendingWithManagerRoleButWithoutScope_403() throws Exception {
+	void pendingWithManagerRoleButWithoutReadScope_403() throws Exception {
 		mvc.perform(get("/apis/expenses/pending")
-				.with(token("taro.sios", "SCOPE_expenses:read", "ROLE_my-manager-role", "ROLE_my-staff-role")))
+				.with(token("taro.sios", "SCOPE_expenses:write", "ROLE_my-manager-role", "ROLE_my-staff-role")))
 			.andExpect(status().isForbidden());
 	}
 
@@ -111,6 +111,15 @@ class AccessControlTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("承認済み"))
 			.andExpect(jsonPath("$.approvedBy").value("admin.sios"));
+	}
+
+	@Test
+	void approveWithAdminRoleButWithoutApproveScope_403() throws Exception {
+		// 部長でも、アプリに承認のスコープ(expenses:approve)が無ければ承認できない
+		mvc.perform(post("/apis/expenses/1/approve").with(csrf())
+				.with(token("admin.sios", "SCOPE_expenses:read",
+					"ROLE_my-admin-role", "ROLE_my-manager-role", "ROLE_my-staff-role")))
+			.andExpect(status().isForbidden());
 	}
 
 	@Test
