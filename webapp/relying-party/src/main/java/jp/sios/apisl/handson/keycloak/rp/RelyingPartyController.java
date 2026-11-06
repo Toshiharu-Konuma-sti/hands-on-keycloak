@@ -16,6 +16,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -30,6 +31,9 @@ import tools.jackson.databind.json.JsonMapper;
  *   2. GET  /callback  : Keycloakから戻ってくる。codeをトークンに交換し(3)、IDトークンを検証する(4)
  *   5. POST /call      : アクセストークンを付けてResource Serverを呼ぶ
  *
+ * /call と /clear は、画面のJavaScript(fetch)から呼ばれたときは、画面の一部(結果とトレース)だけを返す。
+ * ログインやログアウトと違い、セッションが続いたまま何度も試す操作なので、ページ全体は読み直さない。
+ *
  * 各ステップの通信内容は、画面の「通信のトレース」に表示する。
  */
 @Controller
@@ -39,24 +43,42 @@ public class RelyingPartyController {
 	private static final String TOKEN_PATH = "/protocol/openid-connect/token";
 	private static final String LOGOUT_PATH = "/protocol/openid-connect/logout";
 
-	// Keycloakに登録済みのクライアントと、そのクライアントが使うスポーツ名。
-	// スコープは read:<sport>.player(default scope) と read:<sport>.manager(optional scope)
-	private static final Map<String, String> SPORT_OF_CLIENT = Map.of(
-		"app-baseball", "baseball",
-		"app-soccer", "soccer");
+	// Keycloakに登録済みのクライアント(アプリ)。
+	// expenses:read は default scope(常に付く)、optionalScope は要求したときだけ付く
+	record ClientInfo(String id, String label, String optionalScope) {
+	}
 
-	record Api(String label, String path, String rule) {
+	private static final List<ClientInfo> CLIENTS = List.of(
+		new ClientInfo("app-expense-claim", "経費申請アプリ", "expenses:write"),
+		new ClientInfo("app-expense-approval", "経費承認アプリ", "expenses:approve"));
+
+	record Api(String label, String method, String path, String rule, String body) {
+		public boolean needsId() {
+			return path.contains("{id}");
+		}
 	}
 
 	private static final List<Api> APIS = List.of(
-		new Api("whoami", "/apis/whoami", "認証のみ"),
-		new Api("baseball players", "/apis/sports/baseball/players", "スコープ read:baseball.player"),
-		new Api("baseball managers", "/apis/sports/baseball/managers", "スコープ read:baseball.manager かつ ロール my-admin-role"),
-		new Api("soccer players", "/apis/sports/soccer/players", "スコープ read:soccer.player"),
-		new Api("soccer managers", "/apis/sports/soccer/managers", "スコープ read:soccer.manager かつ ロール my-admin-role"));
+		new Api("whoami", "GET", "/apis/whoami", "認証のみ", null),
+		new Api("経費の一覧(自分の分)", "GET", "/apis/expenses", "スコープ expenses:read", null),
+		new Api("経費を申請する", "POST", "/apis/expenses", "スコープ expenses:write",
+			"{\"title\":\"出張宿泊費\",\"amount\":9800}"),
+		new Api("承認待ちの一覧", "GET", "/apis/expenses/pending", "スコープ expenses:approve かつ ロール my-admin-role", null),
+		new Api("経費を承認する", "POST", "/apis/expenses/{id}/approve", "スコープ expenses:approve かつ ロール my-admin-role", null));
 
 	private record Http(int status, String body) {
 	}
+
+	// 画面の「結果」と「履歴」に表示する、API呼び出し1回分の記録
+	public record CallResult(int seq, String method, String path, int status, String message,
+			String required, List<String> grantedScopes, List<String> grantedRoles, String body) {
+		public String statusClass() {
+			return status >= 200 && status < 300 ? "ok" : "ng";
+		}
+	}
+
+	// fetchで呼ばれたときに付くヘッダ。付いていれば画面の一部だけを返す
+	private static final String FETCH_HEADER = "X-Requested-With";
 
 	private final String browserUrl;
 	private final String serverUrl;
@@ -83,11 +105,23 @@ public class RelyingPartyController {
 
 	@GetMapping("/")
 	String index(HttpSession session, Model model) {
+		populate(session, model);
+		return "index";
+	}
+
+	private void populate(HttpSession session, Model model) {
 		Map<String, Object> access = attr(session, "accessClaims");
 		model.addAttribute("loggedIn", access != null);
-		model.addAttribute("clients", SPORT_OF_CLIENT.keySet().stream().sorted().toList());
+		model.addAttribute("clients", CLIENTS);
+		// ログイン時に選んだ内容をフォームに復元する。未ログインやログアウト後は初期状態(先頭のアプリ、チェックなし)
+		Object selected = session.getAttribute("clientId");
+		model.addAttribute("selectedClient", selected != null ? selected : CLIENTS.get(0).id());
+		model.addAttribute("selectedOptional", Boolean.TRUE.equals(session.getAttribute("optionalRequested")));
 		model.addAttribute("apis", APIS);
 		model.addAttribute("steps", steps(session));
+		List<CallResult> calls = calls(session);
+		model.addAttribute("latest", calls.isEmpty() ? null : calls.get(calls.size() - 1));
+		model.addAttribute("history", calls.reversed());
 		if (access != null) {
 			model.addAttribute("clientId", session.getAttribute("clientId"));
 			model.addAttribute("username", access.get("preferred_username"));
@@ -97,18 +131,17 @@ public class RelyingPartyController {
 			model.addAttribute("accessJson", pretty(access));
 			model.addAttribute("idJson", pretty(session.getAttribute("idClaims")));
 		}
-		return "index";
 	}
 
 	// ---- 1. 認可リクエスト ------------------------------------------------------------------
 
 	@PostMapping("/login")
-	String login(@RequestParam String client, @RequestParam(required = false) String manager,
+	String login(@RequestParam String client, @RequestParam(required = false) String optional,
 			HttpSession session) {
-		String clientId = SPORT_OF_CLIENT.containsKey(client) ? client : "app-baseball";
-		String sport = SPORT_OF_CLIENT.get(clientId);
-		// playerスコープはdefault scopeなので指定しなくても付く。managerスコープは明示して要求する(optional scope)
-		String scope = "openid" + (manager != null ? " read:" + sport + ".manager" : "");
+		ClientInfo selected = CLIENTS.stream().filter(c -> c.id().equals(client)).findFirst().orElse(CLIENTS.get(0));
+		String clientId = selected.id();
+		// expenses:read はdefault scopeなので指定しなくても付く。optional scopeは明示して要求する
+		String scope = "openid" + (optional != null ? " " + selected.optionalScope() : "");
 
 		String state = Tokens.random(16);               // CSRF対策: 戻ってきたときに一致を確認する
 		String nonce = Tokens.random(16);               // リプレイ対策: IDトークンに入って戻ってくる
@@ -116,10 +149,11 @@ public class RelyingPartyController {
 		String challenge = Tokens.s256(verifier);       // PKCE: そのハッシュ値。認可リクエストで先に送る
 
 		// 前回のログイン結果を捨てて、最初からやり直す
-		for (String key : List.of("accessToken", "idToken", "accessClaims", "idClaims", "steps")) {
+		for (String key : List.of("accessToken", "idToken", "accessClaims", "idClaims", "steps", "calls")) {
 			session.removeAttribute(key);
 		}
 		session.setAttribute("clientId", clientId);
+		session.setAttribute("optionalRequested", optional != null);
 		session.setAttribute("state", state);
 		session.setAttribute("nonce", nonce);
 		session.setAttribute("verifier", verifier);
@@ -229,19 +263,69 @@ public class RelyingPartyController {
 	// ---- 5. APIの呼び出し -----------------------------------------------------------------
 
 	@PostMapping("/call")
-	String call(@RequestParam String path, HttpSession session) {
+	String call(@RequestParam String method, @RequestParam String path,
+			@RequestParam(required = false) Integer id,
+			@RequestHeader(name = FETCH_HEADER, required = false) String fetch,
+			HttpSession session, Model model) {
 		String token = (String) session.getAttribute("accessToken");
-		if (token == null || APIS.stream().noneMatch(a -> a.path().equals(path))) {
+		Api api = APIS.stream()
+			.filter(a -> a.method().equals(method) && a.path().equals(path)).findFirst().orElse(null);
+		if (token == null || api == null) {
 			return "redirect:/";
 		}
-		String url = resourceServerUrl + path;
-		Http res = send(http.get().uri(url).header(HttpHeaders.AUTHORIZATION, "Bearer " + token));
+		String actualPath = api.needsId() ? path.replace("{id}", String.valueOf(id == null ? 1 : id)) : path;
+		String url = resourceServerUrl + actualPath;
+
+		RestClient.RequestHeadersSpec<?> request;
+		if (api.method().equals("GET")) {
+			request = http.get().uri(url);
+		} else if (api.body() == null) {
+			request = http.post().uri(url);
+		} else {
+			request = http.post().uri(url).contentType(MediaType.APPLICATION_JSON).body(api.body());
+		}
+		Http res = send(request.header(HttpHeaders.AUTHORIZATION, "Bearer " + token));
+
+		String shownRequest = api.method() + " " + url + "\nAuthorization: Bearer " + Tokens.abbreviate(token)
+			+ (api.body() == null ? "" : "\nContent-Type: application/json\n\n" + api.body());
 		steps(session).add(new Step(
-			"5. APIを呼ぶ: " + path + "  →  " + res.status(),
+			"5. APIを呼ぶ: " + api.method() + " " + actualPath + "  →  " + res.status(),
 			"アクセストークンをAuthorizationヘッダに付けて、Resource Serverを呼ぶ。許可するかどうかは、RSがトークンの中身で判断する。",
-			"GET " + url + "\nAuthorization: Bearer " + Tokens.abbreviate(token),
+			shownRequest,
 			"HTTP " + res.status() + "\n" + pretty(parseAny(res.body()))));
-		return "redirect:/";
+		calls(session).add(toCallResult(calls(session).size() + 1, api.method(), actualPath, res));
+		return fetch != null ? updates(session, model) : "redirect:/";
+	}
+
+	// 画面の一部(結果とトレース)だけを返す
+	private String updates(HttpSession session, Model model) {
+		populate(session, model);
+		return "fragments :: updates";
+	}
+
+	// 403のときはRSが返すrequired/grantedを取り出して、画面で見比べられるようにする
+	private CallResult toCallResult(int seq, String method, String path, Http res) {
+		Object parsed = parseAny(res.body());
+		String message = null;
+		String required = null;
+		List<String> scopes = List.of();
+		List<String> roles = List.of();
+		if (parsed instanceof Map<?, ?> map) {
+			message = map.get("message") instanceof String s ? s : null;
+			required = map.get("required") instanceof String s ? s : null;
+			if (map.get("granted") instanceof Map<?, ?> granted) {
+				scopes = strings(granted.get("scopes"));
+				roles = strings(granted.get("roles"));
+			}
+			if (res.status() == 401 && map.get("detail") instanceof String d) {
+				message = message + "(" + d + ")";
+			}
+		}
+		return new CallResult(seq, method, path, res.status(), message, required, scopes, roles, pretty(parsed));
+	}
+
+	private static List<String> strings(Object value) {
+		return value instanceof List<?> list ? list.stream().map(String::valueOf).toList() : List.of();
 	}
 
 	// ---- ログアウト・トレースの消去 -----------------------------------------------------------
@@ -256,15 +340,17 @@ public class RelyingPartyController {
 		// RPのセッションだけでなく、Keycloakのセッションも終了する(別のユーザーでログインし直せる)
 		URI url = UriComponentsBuilder.fromUriString(browserUrl + LOGOUT_PATH)
 			.queryParam("id_token_hint", idToken)
-			.queryParam("post_logout_redirect_uri", "http://localhost:8222/")
+			.queryParam("post_logout_redirect_uri", redirectUri.replace("/callback", "/"))
 			.build().encode().toUri();
 		return "redirect:" + url;
 	}
 
 	@PostMapping("/clear")
-	String clear(HttpSession session) {
+	String clear(@RequestHeader(name = FETCH_HEADER, required = false) String fetch,
+			HttpSession session, Model model) {
 		steps(session).clear();
-		return "redirect:/";
+		calls(session).clear();
+		return fetch != null ? updates(session, model) : "redirect:/";
 	}
 
 	// ---- 補助 -----------------------------------------------------------------------------
@@ -348,5 +434,15 @@ public class RelyingPartyController {
 			session.setAttribute("steps", steps);
 		}
 		return steps;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<CallResult> calls(HttpSession session) {
+		List<CallResult> calls = (List<CallResult>) session.getAttribute("calls");
+		if (calls == null) {
+			calls = new ArrayList<>();
+			session.setAttribute("calls", calls);
+		}
+		return calls;
 	}
 }

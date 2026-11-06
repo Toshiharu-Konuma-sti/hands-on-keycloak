@@ -10,5 +10,7 @@ spring:
         jwt:
           # トークンの発行者(iss)として期待する値。ブラウザから見えるKeycloakのURLに合わせる
           issuer-uri: http://localhost:8080/realms/handson
+          # このAPI(RS)宛てのトークンだけを受け付ける。aud に expense-api が無いと401になる
+          audiences: expense-api
           # 署名の検証鍵はコンテナ間の通信で取得する(issuer-uriからの自動検出は使わない)
           jwk-set-uri: http://keycloak:8080/realms/handson/protocol/openid-connect/certs

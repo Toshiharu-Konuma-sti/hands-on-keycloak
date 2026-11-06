@@ -18,6 +18,16 @@
 	summary { cursor: pointer; font-weight: bold; }
 	form.inline { display: inline; }
 	.api { margin: .3em 0; }
+	ul.note { margin: .3em 0 0; padding-left: 1.4em; }
+	ul.token-summary { margin: .2em 0 .8em; padding-left: 1.4em; }
+	ul.token-summary li { margin: .2em 0; }
+	.badge { display: inline-block; min-width: 2.4em; text-align: center; border-radius: 3px; padding: 0 .4em; color: #fff; font-weight: bold; }
+	.badge.ok { background: #2a7; } .badge.ng { background: #c43; }
+	.result { border-left: 6px solid #ccc; padding: .2em .8em; margin: .6em 0; background: #fafafa; }
+	.result.ok { border-left-color: #2a7; } .result.ng { border-left-color: #c43; }
+	.result h3 { font-size: 1em; margin: .4em 0; }
+	.flash { animation: flash 1s ease-out; }
+	@keyframes flash { from { background: #fff3b0; } to { background: #fafafa; } }
 </style>
 </head>
 <body>
@@ -25,6 +35,7 @@
 <h1>Relying Party (RP)</h1>
 <p class="note">
 	IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れを体験する。
+	このアプリは「経費精算」を題材にしている。申請アプリと承認アプリ、一般社員(staff.sios)と上長(admin.sios)を切り替えて試す。
 	<b>スコープ</b>は「アプリ(RP)に許した操作」、<b>ロール</b>は「ユーザーに与えられた役割」。
 	APIは、その両方を見て許可するかを決める。
 </p>
@@ -34,14 +45,18 @@
 	<form method="post" th:action="@{/login}">
 		<p>
 			アプリ(client_id):
-			<label th:each="c : ${clients}" style="margin-right:1em">
-				<input type="radio" name="client" th:value="${c}" th:checked="${c == 'app-baseball'}"> <span th:text="${c}"></span>
+			<label th:each="c, it : ${clients}" style="margin-right:1em">
+				<input type="radio" name="client" th:value="${c.id()}" th:checked="${c.id() == selectedClient}"> <span th:text="${c.label() + ' (' + c.id() + ')'}"></span>
 			</label>
 		</p>
-		<p>
-			<label><input type="checkbox" name="manager"> managerスコープ(read:&lt;sport&gt;.manager)も要求する</label><br>
-			<span class="note">playerスコープ(read:&lt;sport&gt;.player)は default scope のため、常に付与される。managerは optional scope のため、要求したときだけ付与される。</span>
-		</p>
+		<div>
+			<label><input type="checkbox" name="optional" th:checked="${selectedOptional}"> optionalスコープも要求する(申請アプリ: expenses:write / 承認アプリ: expenses:approve)</label>
+			<ul class="note">
+				<li><code>expenses:read</code> は default scope のため、常に付与される。</li>
+				<li><code>expenses:write</code> / <code>expenses:approve</code> は optional scope のため、要求したときだけ付与される。</li>
+				<li>承認アプリには write、申請アプリには approve は割り当てていない。</li>
+			</ul>
+		</div>
 		<button type="submit">Keycloakでログイン</button>
 		<span class="note">(ユーザー: admin.sios / staff.sios / taro.sios、パスワードはユーザー名と同じ)</span>
 	</form>
@@ -71,31 +86,58 @@
 
 <section th:if="${loggedIn}">
 	<h2>3. APIを呼ぶ</h2>
+	<p class="note" style="margin-bottom:0">いまのトークンが持つもの:</p>
+	<ul class="token-summary">
+		<li>スコープ: <span class="tag" th:each="s : ${scopes}" th:text="${s}"></span></li>
+		<li>ロール: <span class="tag role" th:each="r : ${roles}" th:text="${r}"></span></li>
+	</ul>
 	<div class="api" th:each="a : ${apis}">
-		<form class="inline" method="post" th:action="@{/call}">
+		<form class="inline api-form" method="post" th:action="@{/call}">
+			<input type="hidden" name="method" th:value="${a.method()}">
 			<input type="hidden" name="path" th:value="${a.path()}">
-			<button type="submit" th:text="${a.label()}"></button>
+			<input type="number" name="id" value="1" min="1" style="width:4em" th:if="${a.needsId()}" title="経費ID">
+			<button type="submit" th:text="${a.method() + ' ' + a.label()}"></button>
 		</form>
 		<span class="note" th:text="'必要な条件: ' + ${a.rule()}"></span>
 	</div>
-	<p class="note">結果は、下の「通信のトレース」に表示される。200なら許可、403なら条件を満たしていない(理由もJSONで返る)。</p>
+	<p class="note">結果は、ボタンの下に表示される。200なら許可、403なら条件を満たしていない。(ページは読み直されない)</p>
+	<div th:replace="~{fragments :: apiResult}"></div>
 </section>
 
 <section>
 	<h2>通信のトレース</h2>
-	<form method="post" th:action="@{/clear}" th:if="${!steps.isEmpty()}">
-		<button type="submit">トレースを消去</button>
-	</form>
-	<p class="note" th:if="${steps.isEmpty()}">ログインすると、ここに各ステップの通信内容が表示される。</p>
-	<details th:each="s, it : ${steps}" th:open="${it.last}">
-		<summary th:text="${s.title()}"></summary>
-		<p class="note" th:text="${s.note()}"></p>
-		<b>リクエスト</b>
-		<pre th:text="${s.request()}"></pre>
-		<b>レスポンス</b>
-		<pre th:text="${s.response()}"></pre>
-	</details>
+	<div th:replace="~{fragments :: trace}"></div>
 </section>
+
+<script>
+// API呼び出しとトレース消去は、ページ全体を読み直さず、結果欄とトレースだけを差し替える。
+// (ログイン/ログアウトはセッションが変わるため、従来どおりページ全体を読み直す)
+document.addEventListener('submit', async (event) => {
+	const form = event.target.closest('form.api-form');
+	if (!form) return;
+	event.preventDefault();
+	const button = form.querySelector('button');
+	button.disabled = true;
+	try {
+		const res = await fetch(form.action, {
+			method: 'POST',
+			headers: { 'X-Requested-With': 'fetch' },
+			body: new URLSearchParams(new FormData(form)),
+		});
+		const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+		const fresh = ['api-result', 'trace'].map((id) => doc.getElementById(id));
+		if (fresh.includes(null)) {
+			location.reload();   // セッション切れなど。画面全体を読み直す
+			return;
+		}
+		fresh.forEach((node) => document.getElementById(node.id).replaceWith(node));
+	} catch (e) {
+		form.submit();       // fetchが使えないときは、従来どおりフォーム送信する
+	} finally {
+		button.disabled = false;
+	}
+});
+</script>
 
 </body>
 </html>

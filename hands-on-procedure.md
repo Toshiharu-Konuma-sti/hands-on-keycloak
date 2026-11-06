@@ -23,9 +23,10 @@
     - [前提](#前提)
     - [スコープとロール](#スコープとロール)
     - [体験1: ログインして、トークンの中身を見る](#体験1-ログインしてトークンの中身を見る)
-    - [体験2: APIを呼んで、許可と拒否を見る](#体験2-apiを呼んで許可と拒否を見る)
-    - [体験3: ロールを変える(ユーザーを替える)](#体験3-ロールを変えるユーザーを替える)
-    - [体験4: スコープを変える](#体験4-スコープを変える)
+    - [体験2: 一覧を見て、申請してみる(スコープ)](#体験2-一覧を見て申請してみるスコープ)
+    - [体験3: スコープを増やして、申請する](#体験3-スコープを増やして申請する)
+    - [体験4: 上長として承認する(スコープとロール)](#体験4-上長として承認するスコープとロール)
+    - [体験5: アプリの違いを見る](#体験5-アプリの違いを見る)
     - [まとめ(期待される結果)](#まとめ期待される結果)
     - [興味のある人向け: 仕組みを読む](#興味のある人向け-仕組みを読む)
     - [トラブルシュート](#トラブルシュート-2)
@@ -287,6 +288,7 @@ Keycloakのレルムロールは、アクセストークンの`realm_access.role
 
 SAMLやOIDCの設定を体験する演習とは違い、ここは「できあがった構成を動かして観察する」演習。
 設定は不要。ブラウザで操作し、画面に表示される通信の内容を見ながら、スコープとロールの違いを理解する。
+題材は「経費精算」。社員が経費を申請し、上長が承認する。
 
 ```
  ブラウザ ──(1)ログイン──▶ Keycloak(IdP)
@@ -315,85 +317,119 @@ SAMLやOIDCの設定を体験する演習とは違い、ここは「できあが
 
 ### スコープとロール
 
-| 種類   | 意味                                 | トークン上の場所          | このハンズオンでの値                                        |
-|--------|--------------------------------------|---------------------------|-------------------------------------------------------------|
-| スコープ | アプリ(RP)に許した操作(ユーザーが同意する) | `scope`                   | `read:<sport>.player`(既定) / `read:<sport>.manager`(任意)  |
-| ロール   | ユーザーに与えられた役割(管理者が付与する) | `realm_access.roles`      | `my-admin-role` / `my-staff-role`                           |
+| 種類     | 意味                                       | トークン上の場所      | このハンズオンでの値                                                              |
+|----------|--------------------------------------------|---------------------|-------------------------------------------------------------------------------|
+| スコープ | アプリ(RP)に許した操作(ユーザーが同意する)   | `scope`             | `expenses:read`(既定) / `expenses:write` / `expenses:approve`(いずれも任意)   |
+| ロール   | ユーザーに与えられた役割(管理者が付与する)   | `realm_access.roles`| `my-staff-role`(一般社員) / `my-admin-role`(上長)                           |
 
-RSの各APIは、次の条件で許可を判断する。(`SportsController`の`@PreAuthorize`)
+アプリ(Keycloakのクライアント)ごとに、付与できるスコープが違う。
 
-| API                                    | 必要な条件                                         |
-|----------------------------------------|----------------------------------------------------|
-| `/apis/whoami`                         | 認証のみ(トークンの中身を返す)                     |
-| `/apis/sports/baseball/players`        | スコープ `read:baseball.player`                    |
-| `/apis/sports/baseball/managers`       | スコープ `read:baseball.manager` **かつ** ロール `my-admin-role` |
-| `/apis/sports/soccer/players`          | スコープ `read:soccer.player`                      |
-| `/apis/sports/soccer/managers`         | スコープ `read:soccer.manager` **かつ** ロール `my-admin-role`   |
+| アプリ                                | 常に付与(default scope) | 要求したときだけ付与(optional scope) |
+|-------------------------------------|---------------------------|------------------------------------|
+| 経費申請アプリ (`app-expense-claim`)    | `expenses:read`           | `expenses:write`                   |
+| 経費承認アプリ (`app-expense-approval`) | `expenses:read`           | `expenses:approve`                 |
+
+ユーザー: `staff.sios`=一般社員(`my-staff-role`)、`admin.sios`=上長(`my-admin-role`)、`taro.sios`=両方。
+
+RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`@PreAuthorize`)
+
+| API                                  | 必要な条件                                                              |
+|--------------------------------------|---------------------------------------------------------------------|
+| `GET  /apis/whoami`                  | 認証のみ(トークンの中身を返す)                                          |
+| `GET  /apis/expenses`                | スコープ `expenses:read`(自分が申請した経費だけ返す)                     |
+| `POST /apis/expenses`                | スコープ `expenses:write`(経費の申請)                                 |
+| `GET  /apis/expenses/pending`        | スコープ `expenses:approve` **かつ** ロール `my-admin-role`(承認待ちの一覧) |
+| `POST /apis/expenses/{id}/approve`   | スコープ `expenses:approve` **かつ** ロール `my-admin-role`(経費の承認)     |
+
+- RSは、`aud`(宛先)に`expense-api`を含むトークンだけを受け付ける。宛先が違うトークンは401になる。
+- 経費のデータはRSのメモリ上にあり、初期データは3件(staff.siosの2件、taro.siosの1件、いずれも申請中)。RSを再起動すると初期状態に戻る。
 
 ### 体験1: ログインして、トークンの中身を見る
 
 1. http://localhost:8222/ を開く。
-2. アプリは`app-baseball`、managerスコープは**チェックなし**のまま[Keycloakでログイン]を押す。
-3. Keycloakのログイン画面で`staff.sios / staff.sios`でログインする。
+2. アプリは`経費申請アプリ`、optionalスコープは**チェックなし**のまま[Keycloakでログイン]を押す。
+3. Keycloakのログイン画面で`staff.sios / staff.sios`(一般社員)でログインする。
 4. 同意画面で、RPが要求している内容を確認して[Yes]を押す。(スコープは「アプリに許すこと」)
 5. RPに戻ったら、画面の以下を見る。
-    - [取得したトークンの中身]: ユーザー、スコープ、ロール、宛先(aud)
+    - [取得したトークンの中身]: ユーザー、スコープ(`expenses:read`)、ロール(`my-staff-role`)、宛先(`expense-api`)
     - [通信のトレース]: 1〜4の各ステップの通信内容。
       認可リクエスト → codeを持って戻る → codeをトークンに交換 → IDトークンの検証
 
-### 体験2: APIを呼んで、許可と拒否を見る
+### 体験2: 一覧を見て、申請してみる(スコープ)
 
-1. [APIを呼ぶ]の`baseball players`を押す。→ **200**。スコープ`read:baseball.player`があるため。
-2. `baseball managers`を押す。→ **403**。レスポンスの`required`と`granted`を見比べる。
-   managerスコープも、ロール`my-admin-role`も持っていない。
-3. `soccer players`を押す。→ **403**。`app-baseball`のトークンには、サッカーのスコープが無い。
+体験1のログインのまま、[APIを呼ぶ]を試す。
+結果はボタンのすぐ下に表示される。ページは読み直されないため、スクロール位置はそのままで、何度でも続けて試せる。
+(最新の結果と、これまでの呼び出しの履歴、下の「通信のトレース」が更新される)
 
-### 体験3: ロールを変える(ユーザーを替える)
+1. `GET 経費の一覧(自分の分)`を押す。→ **200**。`expenses:read`があるため。staff.siosが申請した2件が返る。
+2. `POST 経費を申請する`を押す。→ **403**。レスポンスの`required`と`granted`を見比べる。申請に必要な`expenses:write`が、このトークンには無い。
+3. `GET 承認待ちの一覧`を押す。→ **403**。`expenses:approve`もロール`my-admin-role`も無い。
+
+### 体験3: スコープを増やして、申請する
 
 1. [ログアウト]を押す。(RPとKeycloakの両方のセッションが終了する)
-2. managerスコープに**チェックを入れて**、`admin.sios / admin.sios`でログインする。同意画面にmanagerスコープが増える。
-3. `baseball managers`を押す。→ **200**。スコープもロールも満たす。
-4. ログアウトし、同じ条件で`staff.sios`でログインして`baseball managers`を押す。→ **403**。
-   `granted`に、スコープ`read:baseball.manager`はあるが、ロール`my-admin-role`が無い。
+2. `経費申請アプリ`、optionalスコープに**チェックを入れて**、`staff.sios`でログインする。同意画面に「経費を申請する(`expenses:write`)」が増える。
+3. `POST 経費を申請する`を押す。→ **201**。申請中の経費が作成される。
+4. `GET 経費の一覧(自分の分)`を押す。→ **200**。申請した経費が増えている(3件)。
 
-### 体験4: スコープを変える
+### 体験4: 上長として承認する(スコープとロール)
 
-1. ログアウトし、managerスコープの**チェックを外して**、`admin.sios`でログインする。
-2. `baseball managers`を押す。→ **403**。ロール`my-admin-role`はあるが、スコープ`read:baseball.manager`が無い。
+1. ログアウトし、`経費承認アプリ`、optionalスコープに**チェックを入れて**、`staff.sios`(一般社員)でログインする。
+2. `GET 承認待ちの一覧`を押す。→ **403**。`granted`にスコープ`expenses:approve`はあるが、ロール`my-admin-role`が無い。
+   (アプリには承認を許しているが、ユーザーが承認者ではない)
+3. ログアウトし、同じアプリ、optionalスコープにチェックを入れて、`admin.sios`(上長)でログインする。
+4. `GET 承認待ちの一覧`を押す。→ **200**。申請中の経費が全員分返る。
+5. `POST 経費を承認する`を、IDを`1`にして押す。→ **200**。`status`が`承認済み`、`approvedBy`が`admin.sios`になる。
+6. もう一度`GET 承認待ちの一覧`を押すと、承認した経費が消えている。
+
+### 体験5: アプリの違いを見る
+
+ロールが同じ「上長」でも、アプリとスコープで結果が変わる。
+
+1. ログアウトし、`経費申請アプリ`、optionalスコープにチェックを入れて、`admin.sios`(上長)でログインする。
+2. `GET 承認待ちの一覧`を押す。→ **403**。ロール`my-admin-role`はあるが、スコープ`expenses:approve`が無い。
+   申請アプリには「承認」を許していない(Keycloakで`expenses:approve`を割り当てていない)ため、上長でも要求できない。
+3. ログアウトし、`経費承認アプリ`、optionalスコープのチェックを**外して**、`admin.sios`でログインする。
+4. `GET 承認待ちの一覧`を押す。→ **403**。ロールはあるが、スコープ`expenses:approve`を要求していない。
 
 ### まとめ(期待される結果)
 
-`baseball managers`は、スコープとロールの**両方**が必要。
+承認に関するAPIは、スコープとロールの**両方**が必要。「このアプリに許したか(スコープ)」と「このユーザーに許されているか(ロール)」の両方を満たす必要がある。
 
-| ユーザー   | managerスコープ | players | managers | 拒否の理由               |
-|------------|-----------------|---------|----------|--------------------------|
-| admin.sios | あり            | 200     | 200      | -                        |
-| admin.sios | なし            | 200     | 403      | スコープ不足             |
-| staff.sios | あり            | 200     | 403      | ロール不足               |
-| staff.sios | なし            | 200     | 403      | スコープ不足、ロール不足 |
-| taro.sios  | あり            | 200     | 200      | -(adminとstaffの両方のロール) |
+| アプリ | optionalスコープ | ユーザー   | 一覧 | 申請 | 承認待ち/承認 | 拒否の理由                                  |
+|--------|-------------------|------------|------|------|---------------|-------------------------------------------|
+| 申請   | なし              | staff.sios | 200  | 403  | 403           | writeスコープ無し、approveスコープ無し、ロール不足 |
+| 申請   | あり(write)      | staff.sios | 200  | 201  | 403           | approveスコープ無し、ロール不足               |
+| 申請   | あり(write)      | admin.sios | 200  | 201  | 403           | approveスコープ無し(アプリの限界)           |
+| 承認   | なし              | admin.sios | 200  | 403  | 403           | approveスコープ無し                         |
+| 承認   | あり(approve)    | staff.sios | 200  | 403  | 403           | ロール不足(ユーザーの限界)                  |
+| 承認   | あり(approve)    | admin.sios | 200  | 403  | 200           | -                                         |
+| 承認   | あり(approve)    | taro.sios  | 200  | 403  | 200           | -(adminとstaffの両方のロール)          |
 
-`app-soccer`を選ぶと、サッカー側のAPIで同じことを確認できる。
+(表の「申請」「承認」はアプリ。「申請」列は`POST /apis/expenses`の結果)
 
 ### 興味のある人向け: 仕組みを読む
 
 | 知りたいこと                                   | 見る場所                                                                            |
 |------------------------------------------------|-------------------------------------------------------------------------------------|
 | 認可リクエスト・トークン交換・PKCEの実装       | `webapp/relying-party/.../RelyingPartyController.java`(ステップ順に並んでいる)    |
-| 画面の表示                                     | `webapp/relying-party/src/main/resources/templates/index.html`                      |
+| 画面の表示(結果欄やトレースの部分更新を含む)     | `webapp/relying-party/src/main/resources/templates/index.html`、`fragments.html`    |
 | トークンの検証、スコープ/ロールの権限への変換    | `webapp/resource-server/.../security/SecurityConfig.java`                           |
-| APIごとの許可条件                              | `webapp/resource-server/.../controller/SportsController.java`の`@PreAuthorize`      |
+| APIごとの許可条件、経費データ                      | `webapp/resource-server/.../controller/ExpenseController.java`の`@PreAuthorize`   |
 | 403のときに理由を返す処理                      | `webapp/resource-server/.../controller/ForbiddenAdvice.java`                        |
+| 宛先(aud)の検証                                | `webapp/resource-server/src/main/resources/application.yaml`の`audiences`          |
 | 条件の組み合わせごとのテスト                   | `webapp/resource-server/src/test/.../AccessControlTests.java`                       |
-| Keycloak側の設定(スコープ、audience、ロール)  | `setup/step02〜step08`                                                              |
+| Keycloak側の設定(スコープ、audience、クライアント、ロール)  | `setup/step02〜step08`                                                              |
 
 試してみること:
-- `SportsController`の`@PreAuthorize`を変更し(例: `my-admin-role`を`my-staff-role`に)、以下で反映して、結果の違いを見る。
+- `ExpenseController`の`@PreAuthorize`を変更し(例: `my-admin-role`を`my-staff-role`に)、以下で反映して、結果の違いを見る。
     $ cd container && docker compose restart resource-server
 - RSを直接呼ぶと、アクセストークンが無いので401になる。レスポンスの`WWW-Authenticate`も見る。
     $ curl -i http://localhost:8111/apis/whoami
-- Keycloak管理画面で、`staff.sios`にロール`my-admin-role`を付与して(Users > staff.sios > Role mapping)、再ログインすると結果がどう変わるか。
-- Keycloak管理画面 > Clients > app-baseball > [Client scopes] で、`read:baseball.manager`を Optional から Default に変えると、managerスコープのチェックの有無にかかわらず付与される。
+- Keycloak管理画面で、`staff.sios`にロール`my-admin-role`を付与して(Users > staff.sios > Role mapping)、再ログインすると承認できるようになる。
+- Keycloak管理画面 > Clients > app-expense-claim > [Client scopes] で、`expenses:write`を Optional から Default に変えると、チェックの有無にかかわらず付与される。
+- Keycloak管理画面 > Clients > app-expense-claim > [Client scopes] で、`expenses:approve`を Optional として追加すると、申請アプリからも承認を要求できるようになる。
+- `webapp/resource-server/src/main/resources/application.yaml`の`audiences`を別の値(例: `other-api`)に変えて、RSを再起動する。すべてのAPIが401になる。(宛先が違うトークンは受け付けない)
 
 ### トラブルシュート
 

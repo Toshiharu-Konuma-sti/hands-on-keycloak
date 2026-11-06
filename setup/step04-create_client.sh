@@ -16,8 +16,9 @@ AC_TOKEN=$(call_fetch_master_access_token ${KC_URL} ${KEYCLOAK_ADMIN} ${KEYCLOAK
 echo "\n### START: Create clients ##########"
 call_create_client $KC_URL $AC_TOKEN $MY_REALM "my-web-app" $REDIRECT false
 call_create_client $KC_URL $AC_TOKEN $MY_REALM "my-api-gateway" "" false
-call_create_client $KC_URL $AC_TOKEN $MY_REALM "app-baseball" $REDIRECT true
-call_create_client $KC_URL $AC_TOKEN $MY_REALM "app-soccer" $REDIRECT true
+call_create_client $KC_URL $AC_TOKEN $MY_REALM "expense-api" "" false
+call_create_client $KC_URL $AC_TOKEN $MY_REALM "app-expense-claim" $REDIRECT true
+call_create_client $KC_URL $AC_TOKEN $MY_REALM "app-expense-approval" $REDIRECT true
 
 echo "\n### START: Get clients ##########"
 call_get_clients $KC_URL $AC_TOKEN $MY_REALM

@@ -18,9 +18,9 @@ JSON_SCP=$(call_get_client_scopes $KC_URL $AC_TOKEN $MY_REALM)
 echo "\n### START: Map an audience to a client scopes ##########"
 run_assign_audience_to_client_scope $KC_URL $AC_TOKEN $MY_REALM "$JSON_SCP" "read:my-scope" "my-web-app"
 run_assign_audience_to_client_scope $KC_URL $AC_TOKEN $MY_REALM "$JSON_SCP" "write:my-scope" "my-web-app"
-run_assign_audience_to_client_scope $KC_URL $AC_TOKEN $MY_REALM "$JSON_SCP" "read:baseball.manager" "app-baseball"
-run_assign_audience_to_client_scope $KC_URL $AC_TOKEN $MY_REALM "$JSON_SCP" "read:baseball.player" "app-baseball"
-run_assign_audience_to_client_scope $KC_URL $AC_TOKEN $MY_REALM "$JSON_SCP" "read:soccer.manager" "app-soccer"
-run_assign_audience_to_client_scope $KC_URL $AC_TOKEN $MY_REALM "$JSON_SCP" "read:soccer.player" "app-soccer"
+# 経費精算API(Resource Server)宛てのトークンにする。audに`expense-api`が入る
+run_assign_audience_to_client_scope $KC_URL $AC_TOKEN $MY_REALM "$JSON_SCP" "expenses:read" "expense-api"
+run_assign_audience_to_client_scope $KC_URL $AC_TOKEN $MY_REALM "$JSON_SCP" "expenses:write" "expense-api"
+run_assign_audience_to_client_scope $KC_URL $AC_TOKEN $MY_REALM "$JSON_SCP" "expenses:approve" "expense-api"
 
 call_show_finish_banner

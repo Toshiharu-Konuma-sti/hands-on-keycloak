@@ -14,10 +14,9 @@ AC_TOKEN=$(call_fetch_master_access_token ${KC_URL} ${KEYCLOAK_ADMIN} ${KEYCLOAK
 echo "\n### START: Create client scopes ##########"
 call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "read:my-scope"
 call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "write:my-scope"
-call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "read:baseball.manager"
-call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "read:baseball.player"
-call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "read:soccer.manager"
-call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "read:soccer.player"
+call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "expenses:read"
+call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "expenses:write"
+call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "expenses:approve"
 
 echo "\n### START: Get client scopes ##########"
 call_get_client_scopes $KC_URL $AC_TOKEN $MY_REALM

@@ -23,23 +23,16 @@ run_assign_def_client_scope_to_client \
 	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:my-scope"
 run_assign_def_client_scope_to_client \
 	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "write:my-scope"
-run_assign_def_client_scope_to_client \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:baseball.manager"
-run_assign_def_client_scope_to_client \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:baseball.player"
-run_assign_def_client_scope_to_client \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:soccer.manager"
-run_assign_def_client_scope_to_client \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "my-web-app" "read:soccer.player"
-
 echo "\n### START: Assign client scope to client of demo app ##########"
-run_assign_opt_client_scope_to_client \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-baseball" "read:baseball.manager"
+# 経費申請アプリ: 一覧(read)は常に、申請(write)は要求したときだけ。承認(approve)は割り当てない
 run_assign_def_client_scope_to_client \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-baseball" "read:baseball.player"
+	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-expense-claim" "expenses:read"
 run_assign_opt_client_scope_to_client \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-soccer" "read:soccer.manager"
+	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-expense-claim" "expenses:write"
+# 経費承認アプリ: 一覧(read)は常に、承認(approve)は要求したときだけ
 run_assign_def_client_scope_to_client \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-soccer" "read:soccer.player"
+	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-expense-approval" "expenses:read"
+run_assign_opt_client_scope_to_client \
+	$KC_URL $AC_TOKEN $MY_REALM "$JSON_CLT" "$JSON_SCP" "app-expense-approval" "expenses:approve"
 
 call_show_finish_banner

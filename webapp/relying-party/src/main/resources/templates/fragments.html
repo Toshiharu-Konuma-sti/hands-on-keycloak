@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- 「3. APIを呼ぶ」の結果欄。ページ全体を読み直さずに、JavaScript(fetch)がこの部分だけを差し替える -->
+<div th:fragment="apiResult" id="api-result">
+	<p class="note" th:if="${latest == null}">上のボタンを押すと、ここに結果が表示される。</p>
+	<div th:if="${latest != null}" class="result flash" th:classappend="${latest.statusClass()}">
+		<h3>
+			最新の結果
+			<span class="badge" th:classappend="${latest.statusClass()}" th:text="${latest.status()}"></span>
+			<code th:text="${latest.method() + ' ' + latest.path()}"></code>
+		</h3>
+		<p th:if="${latest.message() != null}" th:text="${latest.message()}"></p>
+		<table th:if="${latest.required() != null}">
+			<tr><th>このAPIに必要な条件</th><td><code th:text="${latest.required()}"></code></td></tr>
+			<tr><th>トークンが持つスコープ</th><td><span class="tag" th:each="s : ${latest.grantedScopes()}" th:text="${s}"></span></td></tr>
+			<tr><th>トークンが持つロール</th><td><span class="tag role" th:each="r : ${latest.grantedRoles()}" th:text="${r}"></span></td></tr>
+		</table>
+		<details>
+			<summary>レスポンスの本文</summary>
+			<pre th:text="${latest.body()}"></pre>
+		</details>
+	</div>
+	<div th:if="${!history.isEmpty()}">
+		<b>呼び出しの履歴(新しい順)</b>
+		<table>
+			<tr><th>#</th><th>API</th><th>結果</th></tr>
+			<tr th:each="h : ${history}">
+				<td th:text="${h.seq()}"></td>
+				<td th:text="${h.method() + ' ' + h.path()}"></td>
+				<td><span class="badge" th:classappend="${h.statusClass()}" th:text="${h.status()}"></span></td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<!-- 「通信のトレース」。同じく部分的に差し替える -->
+<div th:fragment="trace" id="trace">
+	<form class="api-form" method="post" th:action="@{/clear}" th:if="${!steps.isEmpty()}">
+		<button type="submit">トレースと履歴を消去</button>
+	</form>
+	<p class="note" th:if="${steps.isEmpty()}">ログインすると、ここに各ステップの通信内容が表示される。</p>
+	<details th:each="s, it : ${steps}" th:open="${it.last}">
+		<summary th:text="${s.title()}"></summary>
+		<p class="note" th:text="${s.note()}"></p>
+		<b>リクエスト</b>
+		<pre th:text="${s.request()}"></pre>
+		<b>レスポンス</b>
+		<pre th:text="${s.response()}"></pre>
+	</details>
+</div>
+
+<!-- fetchで呼ばれたときに返す断片(結果欄とトレースの両方) -->
+<div th:fragment="updates">
+	<div th:replace="~{:: apiResult}"></div>
+	<div th:replace="~{:: trace}"></div>
+</div>
+
+</body>
+</html>
