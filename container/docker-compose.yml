@@ -35,7 +35,7 @@ services:
       - ../webapp:/src:ro
       - gradle-cache-rs:/root/.gradle
     working_dir: /webapp
-    command: sh -c "cp -a /src/. /webapp/ && ./gradlew :resource-server:bootRun --console=plain"
+    command: sh -c "rm -rf /webapp/*/src && cp -a /src/. /webapp/ && ./gradlew :resource-server:bootRun --console=plain"
     depends_on:
       keycloak:
         condition: service_healthy
@@ -52,7 +52,7 @@ services:
       - ../webapp:/src:ro
       - gradle-cache-rp:/root/.gradle
     working_dir: /webapp
-    command: sh -c "cp -a /src/. /webapp/ && ./gradlew :relying-party:bootRun --console=plain"
+    command: sh -c "rm -rf /webapp/*/src && cp -a /src/. /webapp/ && ./gradlew :relying-party:bootRun --console=plain"
     depends_on:
       keycloak:
         condition: service_healthy

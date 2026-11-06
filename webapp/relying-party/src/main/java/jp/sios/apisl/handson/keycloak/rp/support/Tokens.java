@@ -1,4 +1,4 @@
-package jp.sios.apisl.handson.keycloak.rp;
+package jp.sios.apisl.handson.keycloak.rp.support;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -10,7 +10,7 @@ import java.util.Map;
 import tools.jackson.databind.json.JsonMapper;
 
 // トークンの読み取りと、PKCE/state用の乱数など、フローの本筋ではない補助処理
-final class Tokens {
+public final class Tokens {
 
 	private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -19,14 +19,14 @@ final class Tokens {
 
 	// JWTのペイロード(2つ目の部分)をBase64URLで復号して、クレームのMapにする。署名は検証しない
 	@SuppressWarnings("unchecked")
-	static Map<String, Object> claimsOf(JsonMapper json, String jwt) {
+	public static Map<String, Object> claimsOf(JsonMapper json, String jwt) {
 		String payload = jwt.split("\\.")[1];
 		String text = new String(Base64.getUrlDecoder().decode(payload), StandardCharsets.UTF_8);
 		return json.readValue(text, Map.class);
 	}
 
 	// `aud`は文字列のことも配列のこともあるため、リストにそろえる
-	static List<String> audienceOf(Map<String, Object> claims) {
+	public static List<String> audienceOf(Map<String, Object> claims) {
 		Object aud = claims.get("aud");
 		if (aud instanceof List<?> list) {
 			return list.stream().map(String::valueOf).toList();
@@ -34,14 +34,14 @@ final class Tokens {
 		return aud == null ? List.of() : List.of(String.valueOf(aud));
 	}
 
-	static String random(int bytes) {
+	public static String random(int bytes) {
 		byte[] b = new byte[bytes];
 		RANDOM.nextBytes(b);
 		return Base64.getUrlEncoder().withoutPadding().encodeToString(b);
 	}
 
 	// PKCEのcode_challenge = BASE64URL(SHA-256(code_verifier))
-	static String s256(String verifier) {
+	public static String s256(String verifier) {
 		try {
 			byte[] digest = MessageDigest.getInstance("SHA-256")
 				.digest(verifier.getBytes(StandardCharsets.US_ASCII));
@@ -52,7 +52,7 @@ final class Tokens {
 	}
 
 	// 長いトークンを、トレース表示用に短くする
-	static String abbreviate(String token) {
+	public static String abbreviate(String token) {
 		return token.length() <= 24 ? token : token.substring(0, 24) + "...(" + token.length() + "文字)";
 	}
 }

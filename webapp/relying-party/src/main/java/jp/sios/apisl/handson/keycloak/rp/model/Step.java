@@ -1,4 +1,4 @@
-package jp.sios.apisl.handson.keycloak.rp;
+package jp.sios.apisl.handson.keycloak.rp.model;
 
 // 画面の「通信のトレース」に表示する1ステップ分の記録
 // screen は、リクエストと応答の間に出す「画面が表示されたか」の説明(使わないステップは null)

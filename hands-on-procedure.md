@@ -438,10 +438,11 @@ RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`
 
 | 知りたいこと                                   | 見る場所                                                                            |
 |------------------------------------------------|-------------------------------------------------------------------------------------|
-| 認可リクエスト・トークン交換・PKCEの実装       | `webapp/relying-party/.../RelyingPartyController.java`(ステップ順に並んでいる)    |
+| 認可リクエスト・トークン交換・PKCEの実装       | `webapp/relying-party/.../service/AuthorizationService.java`(ステップ順に並んでいる。入口と全体の流れは`controller/RelyingPartyController.java`) |
 | 画面の表示(結果欄やトレースの部分更新を含む)     | `webapp/relying-party/src/main/resources/templates/index.html`、`fragments.html`    |
 | トークンの検証、スコープ/ロールの権限への変換    | `webapp/resource-server/.../security/SecurityConfig.java`                           |
-| APIごとの許可条件、経費データ                      | `webapp/resource-server/.../controller/ExpenseController.java`の`@PreAuthorize`   |
+| APIごとの許可条件                              | `webapp/resource-server/.../controller/ExpenseController.java`の`@PreAuthorize`   |
+| 経費データ(メモリ上)                          | `webapp/resource-server/.../service/ExpenseService.java`                            |
 | 403のときに理由を返す処理                      | `webapp/resource-server/.../controller/ForbiddenAdvice.java`                        |
 | 宛先(aud)の検証                                | `webapp/resource-server/src/main/resources/application.yaml`の`audiences`          |
 | 条件の組み合わせごとのテスト                   | `webapp/resource-server/src/test/.../AccessControlTests.java`                       |
