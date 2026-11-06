@@ -2,12 +2,12 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
-<title>Relying Party</title>
+<title th:text="${currentApp != null ? 'Relying Party (RP)：' + currentApp.label() : 'Relying Party (RP)'}">Relying Party (RP)</title>
 <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
-<body>
+<body th:attr="data-app=${currentApp != null ? currentApp.id() : ''}">
 
-<h1>Relying Party (RP)</h1>
+<h1>Relying Party (RP)<span th:if="${currentApp != null}" th:text="'：' + ${currentApp.label()}"></span></h1>
 <p class="note" style="margin-bottom:0">
 	IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れを体験する。
 </p>
@@ -24,12 +24,18 @@
 <section>
 	<h2>1. ログインする</h2>
 	<form method="post" th:action="@{/login}">
-		<p>
-			アプリ(client_id):
-			<label th:each="c, it : ${clients}" style="margin-right:1em">
-				<input type="radio" name="client" th:value="${c.id()}" th:checked="${c.id() == selectedClient}"> <span th:text="${c.label() + ' (' + c.id() + ')'}"></span>
-			</label>
+		<p class="status">いまのRP:
+			<b th:if="${currentApp != null}" th:text="${currentApp.label() + '(ログイン中)'}"></b>
+			<b th:unless="${currentApp != null}">このRPを振る舞わせるアプリを選択してログインしてください</b>
 		</p>
+		<div class="app-select">
+			<p>
+				アプリ(client_id):
+				<label th:each="c, it : ${clients}" style="margin-right:1em">
+					<input type="radio" name="client" required th:value="${c.id()}" th:checked="${c.id() == selectedClient}"> <span th:text="${c.label() + ' (' + c.id() + ')'}"></span>
+				</label>
+			</p>
+		</div>
 		<div>
 			追加で要求するoptionalスコープ:
 			<label th:each="s : ${optionalScopes}" style="margin-right:1em">

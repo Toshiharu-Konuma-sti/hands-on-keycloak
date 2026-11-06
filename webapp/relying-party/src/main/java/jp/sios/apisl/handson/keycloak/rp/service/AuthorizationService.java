@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -13,6 +14,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import jp.sios.apisl.handson.keycloak.rp.config.RpProperties;
+import jp.sios.apisl.handson.keycloak.rp.model.ClientInfo;
 import jp.sios.apisl.handson.keycloak.rp.model.LoginError;
 import jp.sios.apisl.handson.keycloak.rp.model.Step;
 import jp.sios.apisl.handson.keycloak.rp.service.HttpSender.Response;
@@ -45,9 +47,13 @@ public class AuthorizationService {
 
 	// ---- 1. 認可リクエスト ------------------------------------------------------------------
 
-	// 認可リクエストを作り、ブラウザを移動させるKeycloakのURLを返す
-	public URI startLogin(String client, List<String> optionalScopes, SessionStore store) {
-		String clientId = catalog.clientOrDefault(client).id();
+	// 認可リクエストを作り、ブラウザを移動させるKeycloakのURLを返す。アプリが未選択や不明のときは、何もせず空を返す
+	public Optional<URI> startLogin(String client, List<String> optionalScopes, SessionStore store) {
+		Optional<ClientInfo> selected = catalog.findClient(client);
+		if (selected.isEmpty()) {
+			return Optional.empty();
+		}
+		String clientId = selected.get().id();
 		// 画面で選んだoptional scopeを、アプリを問わずそのまま要求する。付与するか拒否するかはKeycloakが決める
 		List<String> requested = catalog.chooseOptionalScopes(optionalScopes);
 		String scope = "openid" + requested.stream().map(s -> " " + s).reduce("", String::concat);
@@ -78,7 +84,7 @@ public class AuthorizationService {
 			"RPはブラウザをKeycloakのログイン画面へ移動させる。どのアプリが(client_id)、何を許してほしいか(scope)を伝える。",
 			"GET " + authEndpoint + "\n" + lines(params),
 			"(この応答はブラウザとKeycloakの間でやり取りされるため、RPには見えない。結果は、ブラウザがRPに戻ってきたときに分かる)"));
-		return url.build().encode().toUri();
+		return Optional.of(url.build().encode().toUri());
 	}
 
 	// 1の応答は、ブラウザとKeycloakの間のやり取りでRPには見えない。

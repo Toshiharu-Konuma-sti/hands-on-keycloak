@@ -41,9 +41,9 @@ public class Catalog {
 		return APIS;
 	}
 
-	// 一覧にないアプリが指定されたときは、先頭のアプリにする
-	public ClientInfo clientOrDefault(String id) {
-		return CLIENTS.stream().filter(c -> c.id().equals(id)).findFirst().orElse(CLIENTS.get(0));
+	// 一覧にないアプリや未指定(null)のときは空を返す
+	public Optional<ClientInfo> findClient(String id) {
+		return CLIENTS.stream().filter(c -> c.id().equals(id)).findFirst();
 	}
 
 	// 一覧にあるスコープだけを、一覧の順で残す

@@ -60,10 +60,12 @@ public class RelyingPartyController {
 
 	// 1. 認可リクエスト
 	@PostMapping("/login")
-	String login(@RequestParam String client,
+	String login(@RequestParam(required = false) String client,
 			@RequestParam(name = "scope", required = false) List<String> optionalScopes,
 			HttpSession session) {
-		return "redirect:" + authorization.startLogin(client, optionalScopes, new SessionStore(session));
+		return authorization.startLogin(client, optionalScopes, new SessionStore(session))
+			.map(url -> "redirect:" + url)
+			.orElse("redirect:/");
 	}
 
 	// 2. Keycloakから戻る(3と4もここで行う)
@@ -116,9 +118,10 @@ public class RelyingPartyController {
 		Map<String, Object> access = store.accessClaims();
 		model.addAttribute("loggedIn", access != null);
 		model.addAttribute("clients", catalog.clients());
-		// ログイン時に選んだ内容をフォームに復元する。未ログインやログアウト後は初期状態(先頭のアプリ、チェックなし)
-		String selected = store.clientId();
-		model.addAttribute("selectedClient", selected != null ? selected : catalog.clients().get(0).id());
+		// ログイン時に選んだ内容をフォームに復元する。未ログインやログアウト後は初期状態(アプリは未選択、チェックなし)
+		model.addAttribute("selectedClient", store.clientId());
+		// このRPがいま振る舞っているアプリ。ログインに成功したときだけ決まる
+		model.addAttribute("currentApp", access == null ? null : catalog.findClient(store.clientId()).orElse(null));
 		model.addAttribute("optionalScopes", catalog.optionalScopes());
 		model.addAttribute("selectedScopes", store.requestedScopes());
 		model.addAttribute("loginError", store.loginError());
