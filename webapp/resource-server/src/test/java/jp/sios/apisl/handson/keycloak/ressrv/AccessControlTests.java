@@ -51,28 +51,39 @@ class AccessControlTests {
 	}
 
 	@Test
-	void read_needsScopeOnly_andReturnsOwnExpenses() throws Exception {
-		mvc.perform(get("/apis/expenses").with(token("staff.sios", "SCOPE_expenses:read")))
+	void read_needsReadScopeAndStaffRole_andReturnsOwnExpenses() throws Exception {
+		mvc.perform(get("/apis/expenses").with(token("staff.sios", "SCOPE_expenses:read", "ROLE_my-staff-role")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$[*].applicant", everyItem(is("staff.sios"))));
 	}
 
 	@Test
 	void readWithoutScope_403() throws Exception {
-		mvc.perform(get("/apis/expenses").with(token("staff.sios", "SCOPE_expenses:write")))
+		mvc.perform(get("/apis/expenses").with(token("staff.sios", "SCOPE_expenses:write", "ROLE_my-staff-role")))
 			.andExpect(status().isForbidden())
 			.andExpect(jsonPath("$.error").value("forbidden"));
 	}
 
 	@Test
-	void claim_needsWriteScope() throws Exception {
+	void readWithoutStaffRole_403() throws Exception {
+		mvc.perform(get("/apis/expenses").with(token("staff.sios", "SCOPE_expenses:read")))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void claim_needsWriteScopeAndStaffRole() throws Exception {
 		String body = "{\"title\":\"タクシー代\",\"amount\":2100}";
 		mvc.perform(post("/apis/expenses").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body)
-				.with(token("staff.sios", "SCOPE_expenses:read", "SCOPE_expenses:write")))
+				.with(token("staff.sios", "SCOPE_expenses:read", "SCOPE_expenses:write", "ROLE_my-staff-role")))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.status").value("申請中"));
+		// 書き込みのスコープが無い
 		mvc.perform(post("/apis/expenses").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body)
-				.with(token("staff.sios", "SCOPE_expenses:read")))
+				.with(token("staff.sios", "SCOPE_expenses:read", "ROLE_my-staff-role")))
+			.andExpect(status().isForbidden());
+		// ロールが無い
+		mvc.perform(post("/apis/expenses").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body)
+				.with(token("staff.sios", "SCOPE_expenses:read", "SCOPE_expenses:write")))
 			.andExpect(status().isForbidden());
 	}
 

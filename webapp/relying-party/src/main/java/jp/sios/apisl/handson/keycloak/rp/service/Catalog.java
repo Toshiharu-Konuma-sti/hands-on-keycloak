@@ -23,8 +23,8 @@ public class Catalog {
 
 	private static final List<Api> APIS = List.of(
 		new Api("whoami", "GET", "/apis/whoami", "認証のみ", null),
-		new Api("経費の一覧(自分の分)", "GET", "/apis/expenses", "スコープ expenses:read", null),
-		new Api("経費を申請する", "POST", "/apis/expenses", "スコープ expenses:write",
+		new Api("経費の一覧(自分の分)", "GET", "/apis/expenses", "スコープ expenses:read かつ ロール my-staff-role", null),
+		new Api("経費を申請する", "POST", "/apis/expenses", "スコープ expenses:write かつ ロール my-staff-role",
 			"{\"title\":\"出張宿泊費\",\"amount\":9800}"),
 		new Api("承認待ちの一覧", "GET", "/apis/expenses/pending", "スコープ expenses:read かつ ロール my-manager-role(課長以上)", null),
 		new Api("経費を承認する", "POST", "/apis/expenses/{id}/approve", "スコープ expenses:approve かつ ロール my-admin-role(部長)", null));

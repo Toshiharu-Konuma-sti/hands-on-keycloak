@@ -48,16 +48,16 @@ public class ExpenseController {
 		return me;
 	}
 
-	// スコープだけで許可する。自分が申請した経費だけを返す
+	// 読むスコープ と 一般社員以上のロールで許可する。自分が申請した経費だけを返す
 	@GetMapping("/expenses")
-	@PreAuthorize("hasAuthority('SCOPE_expenses:read')")
+	@PreAuthorize("hasAuthority('SCOPE_expenses:read') and hasRole('my-staff-role')")
 	public List<Expense> myExpenses(@AuthenticationPrincipal Jwt jwt) {
 		return expenses.listOf(jwt.getClaimAsString("preferred_username"));
 	}
 
-	// 申請には、書き込みのスコープが要る
+	// 申請には、書き込みのスコープ と 一般社員以上のロールが要る
 	@PostMapping("/expenses")
-	@PreAuthorize("hasAuthority('SCOPE_expenses:write')")
+	@PreAuthorize("hasAuthority('SCOPE_expenses:write') and hasRole('my-staff-role')")
 	public ResponseEntity<Expense> claim(@RequestBody NewExpense body, @AuthenticationPrincipal Jwt jwt) {
 		if (body.title() == null || body.title().isBlank() || body.amount() <= 0) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "titleと、1以上のamountが必要");
