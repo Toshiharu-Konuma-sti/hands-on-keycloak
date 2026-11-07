@@ -53,18 +53,40 @@ call_get_realms()
 }
 # }}}
 
+# {{{ call_import_localization()
+# $1: Admin REST API Host
+# $2: access token
+# $3: realm's name
+# $4: locale (e.g. ja, en)
+# $5: JSON object of message keys and their texts (Realm settings > Localization > Realm overrides)
+call_import_localization()
+{
+	curl -v -X POST \
+		"$1/admin/realms/$3/localization/$4" \
+		-H "Authorization: Bearer $2" \
+		-H "Content-Type: application/json" \
+		-d "$5"
+}
+# }}}
+
 # {{{ call_create_client_scope()
 # $1: Admin REST API Host
 # $2: access token
 # $3: realm's name
 # $4: scope's name to create newlly
+# $5: (optional) text for the consent screen. Without it, the scope's name is displayed.
 call_create_client_scope()
 {
+	CONSENT_ATTR=""
+	if [ -n "$5" ]; then
+		CONSENT_ATTR=", \"display.on.consent.screen\": true, \"consent.screen.text\": \"$5\""
+	fi
+
 	curl -v POST \
 		"$1/admin/realms/$3/client-scopes" \
 		-H "Authorization: Bearer $2" \
 		-H "Content-Type: application/json" \
-		-d "{\"name\": \"$4\", \"protocol\": \"openid-connect\", \"attributes\": {\"include.in.token.scope\": true}}"
+		-d "{\"name\": \"$4\", \"protocol\": \"openid-connect\", \"attributes\": {\"include.in.token.scope\": true${CONSENT_ATTR}}}"
 }
 # }}}
 
@@ -91,11 +113,16 @@ call_get_client_scopes()
 # $4: client id to create newlly
 # $5: redirect URL
 # $6: flag of 'consentRequired' (This is a flag whether to display the consent screen or not.)
+# $7: (optional) client's display name. Without it, the client id is displayed on the consent screen.
 call_create_client()
 {
 	REDIRCT=$(echo $5 | sed -e 's/,/","/g')
 	WEB_ORG=$(echo $5 | sed -E 's/^.*(http|https)(:\/\/)([^/]+).*/\1\2\3/g')
-	JSON="{\"clientId\": \"$4\", \"enabled\": true, \"secret\": \"my-secret\", \"redirectUris\": [\"$REDIRCT\"], \"webOrigins\": [\"$WEB_ORG\"], \"publicClient\": false, \"consentRequired\": $6, \"fullScopeAllowed\": true, \"attributes\": {\"post.logout.redirect.uris\": \"+\"}}"
+	NAME_JSON=""
+	if [ -n "$7" ]; then
+		NAME_JSON="\"name\": \"$7\", "
+	fi
+	JSON="{\"clientId\": \"$4\", ${NAME_JSON}\"enabled\": true, \"secret\": \"my-secret\", \"redirectUris\": [\"$REDIRCT\"], \"webOrigins\": [\"$WEB_ORG\"], \"publicClient\": false, \"consentRequired\": $6, \"fullScopeAllowed\": true, \"attributes\": {\"post.logout.redirect.uris\": \"+\"}}"
 
 	curl -v POST \
 		"$1/admin/realms/$3/clients" \

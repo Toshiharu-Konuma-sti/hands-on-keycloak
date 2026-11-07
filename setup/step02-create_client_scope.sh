@@ -14,9 +14,10 @@ AC_TOKEN=$(call_fetch_master_access_token ${KC_URL} ${KEYCLOAK_ADMIN} ${KEYCLOAK
 echo "\n### START: Create client scopes ##########"
 call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "read:my-scope"
 call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "write:my-scope"
-call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "expenses:read"
-call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "expenses:write"
-call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "expenses:approve"
+# 同意画面の文言は、step01で登録したキー(${...})を渡す。表示は日英で切り替わる
+call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "expenses:read" '${scope_expenses_read}'
+call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "expenses:write" '${scope_expenses_write}'
+call_create_client_scope $KC_URL $AC_TOKEN $MY_REALM "expenses:approve" '${scope_expenses_approve}'
 
 echo "\n### START: Get client scopes ##########"
 call_get_client_scopes $KC_URL $AC_TOKEN $MY_REALM

@@ -17,8 +17,9 @@ echo "\n### START: Create clients ##########"
 call_create_client $KC_URL $AC_TOKEN $MY_REALM "my-web-app" $REDIRECT false
 call_create_client $KC_URL $AC_TOKEN $MY_REALM "my-api-gateway" "" false
 call_create_client $KC_URL $AC_TOKEN $MY_REALM "expense-api" "" false
-call_create_client $KC_URL $AC_TOKEN $MY_REALM "app-expense-claim" $REDIRECT true
-call_create_client $KC_URL $AC_TOKEN $MY_REALM "app-expense-approval" $REDIRECT true
+# 表示名は、step01で登録したキー(${...})を渡す。同意画面の表示は日英で切り替わる
+call_create_client $KC_URL $AC_TOKEN $MY_REALM "app-expense-claim" $REDIRECT true '${client_app_expense_claim}'
+call_create_client $KC_URL $AC_TOKEN $MY_REALM "app-expense-approval" $REDIRECT true '${client_app_expense_approval}'
 
 echo "\n### START: Get clients ##########"
 call_get_clients $KC_URL $AC_TOKEN $MY_REALM
