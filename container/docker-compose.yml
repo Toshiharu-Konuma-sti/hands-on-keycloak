@@ -67,6 +67,7 @@ services:
     environment:
       # OIDC連携(Generic OAuth)はハンズオン体験者がGrafanaの管理画面から設定する。リダイレクトURIの生成に必要なため、ここだけ設定しておく
       GF_SERVER_ROOT_URL: http://localhost:3000/
+      GF_SECURITY_ADMIN_PASSWORD: password
     networks:
       - external
     ports:
