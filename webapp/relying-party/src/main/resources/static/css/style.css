@@ -4,7 +4,7 @@ h2 { font-size: 1.1em; margin-top: 1.6em; padding: .4em .9em; color: #fff; backg
 section { margin-bottom: 1em; }
 pre { background: #f4f4f4; padding: .6em; overflow-x: auto; margin: .3em 0; font-size: .85em; }
 table { border-collapse: collapse; } th, td { border: 1px solid #ccc; padding: .3em .7em; text-align: left; vertical-align: top; }
-th { background: #eee; }
+th { background: #eee; white-space: nowrap; }
 td { background: #fff; }
 table.compact th, table.compact td { padding: .15em .5em; }
 table.compact .tag { font-size: 1em; }

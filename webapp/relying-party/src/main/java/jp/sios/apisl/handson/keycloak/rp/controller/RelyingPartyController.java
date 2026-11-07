@@ -120,8 +120,9 @@ public class RelyingPartyController {
 		model.addAttribute("clients", catalog.clients());
 		// ログイン時に選んだ内容をフォームに復元する。未ログインやログアウト後は初期状態(アプリは未選択、チェックなし)
 		model.addAttribute("selectedClient", store.clientId());
-		// このRPがいま振る舞っているアプリ。ログインに成功したときだけ決まる
-		model.addAttribute("currentApp", access == null ? null : catalog.findClient(store.clientId()).orElse(null));
+		// このRPがいま振る舞っているアプリ。ログインに成功したときだけ決まり、トークンの発行先(azp)から求める
+		String azp = access == null ? null : Tokens.authorizedPartyOf(access);
+		model.addAttribute("currentApp", azp == null ? null : catalog.findClient(azp).orElse(null));
 		model.addAttribute("optionalScopes", catalog.optionalScopes());
 		model.addAttribute("selectedScopes", store.requestedScopes());
 		model.addAttribute("loginError", store.loginError());
@@ -131,8 +132,9 @@ public class RelyingPartyController {
 		model.addAttribute("latest", calls.isEmpty() ? null : calls.get(calls.size() - 1));
 		model.addAttribute("history", calls.reversed());
 		if (access != null) {
-			model.addAttribute("clientId", store.clientId());
+			model.addAttribute("azp", azp);
 			model.addAttribute("username", access.get("preferred_username"));
+			model.addAttribute("email", access.get("email"));
 			model.addAttribute("scopes", List.of(String.valueOf(access.getOrDefault("scope", "")).split(" ")));
 			model.addAttribute("audience", Tokens.audienceOf(access));
 			model.addAttribute("roles", realmRoles(access));

@@ -46,7 +46,7 @@
 		<p class="note" th:text="${s.note()}"></p>
 		<b>リクエスト</b>
 		<pre th:text="${s.request()}"></pre>
-		<p class="note" th:if="${s.screen() != null}" th:text="${'画面: ' + s.screen()}"></p>
+		<p class="note" th:if="${s.screen() != null}" th:text="${'⇒ ' + s.screen()}"></p>
 		<b>レスポンス</b>
 		<pre th:text="${s.response()}"></pre>
 	</details>

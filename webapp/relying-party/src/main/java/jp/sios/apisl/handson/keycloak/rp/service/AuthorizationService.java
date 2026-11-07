@@ -95,9 +95,9 @@ public class AuthorizationService {
 		}
 		Step first = steps.get(0);
 		String screen = failed
-			? "ログイン画面は表示されなかった(Keycloakがリクエストをエラーと判断した)"
-			: "Keycloakのログイン画面と同意画面が表示され、ユーザーが操作した";
-		String response = "HTTP 302 Found\nLocation: " + props.redirectUri() + "\n" + lines(returned);
+			? "Keycloakからエラーが返ってきた"
+			: "Keycloakのログイン機能を中継...";
+		String response = "HTTP 302 Found(ブラウザが戻ってきた内容から再現した、Keycloakの応答)\nLocation: " + props.redirectUri() + "\n" + lines(returned);
 		steps.set(0, new Step(first.title(), first.note(), first.request(), screen, response));
 	}
 
@@ -173,7 +173,8 @@ public class AuthorizationService {
 		boolean ok = checkIdToken(idClaims, clientId, store.nonce(), checks);
 		steps.add(new Step(
 			"4. IDトークンの検証(RP)",
-			"IDトークンは「誰がログインしたか」を表す。発行者・宛先・nonce・期限を確認する。",
+			"IDトークンは「誰がログインしたか」を表す。発行者・宛先・nonce・期限を確認する。"
+				+ "(トークンエンドポイントから直接受け取ったため、署名の検証は省略している)",
 			String.join("\n", checks),
 			ok ? "OK: ログインを受け付ける" : "NG: ログインを受け付けない"));
 		if (ok) {

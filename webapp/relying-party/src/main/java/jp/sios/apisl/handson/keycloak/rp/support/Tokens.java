@@ -34,6 +34,12 @@ public final class Tokens {
 		return aud == null ? List.of() : List.of(String.valueOf(aud));
 	}
 
+	// トークンが発行されたアプリ(クライアント)。Keycloakのトークンでは`azp`クレームに入る
+	public static String authorizedPartyOf(Map<String, Object> claims) {
+		Object azp = claims.get("azp");
+		return azp == null ? null : String.valueOf(azp);
+	}
+
 	public static String random(int bytes) {
 		byte[] b = new byte[bytes];
 		RANDOM.nextBytes(b);

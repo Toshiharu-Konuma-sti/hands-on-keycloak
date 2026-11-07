@@ -42,9 +42,9 @@
 				<input type="checkbox" name="scope" th:value="${s}" th:checked="${selectedScopes.contains(s)}"> <code th:text="${s}"></code>
 			</label>
 			<ul class="note">
-				<li><code>expenses:read</code> は default scope のため、要求しなくても常に付与</li>
-				<li><code>expenses:write</code> / <code>expenses:approve</code> は optional scope のため、要求したときだけ付与</li>
-				<li>Keycloakのアプリ設定では、<code>expenses:write</code> を経費申請アプリに、<code>expenses:approve</code> を経費承認アプリに割り当て</li>
+				<li><code>expenses:read</code> は default scope のため、追加要求しなくても常に付与</li>
+				<li><code>expenses:write</code> / <code>expenses:approve</code> は optional scope のため、追加要求したときだけ付与</li>
+				<li>Keycloakのアプリ設定では、経費申請アプリへ <code>expenses:read</code>, <code>expenses:write</code> を、経費承認アプリへ <code>expenses:read</code>, <code>expenses:approve</code> を割り当て</li>
 				<li>アプリに割り当てていないスコープを要求すると、Keycloakがエラー(<code>invalid_scope</code>)で拒否</li>
 			</ul>
 		</div>
@@ -73,11 +73,12 @@
 <section th:if="${loggedIn}">
 	<h2>2. 取得したトークンの中身</h2>
 	<table>
-		<tr><th>ユーザー</th><td th:text="${username}"></td></tr>
-		<tr><th>アプリ(client_id)</th><td th:text="${clientId}"></td></tr>
-		<tr><th>スコープ(scope)</th><td><span class="tag" th:each="s : ${scopes}" th:text="${s}"></span></td></tr>
-		<tr><th>ロール(realm_access.roles)</th><td><span class="tag role" th:each="r : ${roles}" th:text="${r}"></span></td></tr>
-		<tr><th>宛先(aud)</th><td><span class="tag" th:each="a : ${audience}" th:text="${a}"></span></td></tr>
+		<tr><th>ユーザー</th><th><code>preferred_username</code></th><td th:text="${username}"></td></tr>
+		<tr><th>メール</th><th><code>email</code></th><td th:text="${email}"></td></tr>
+		<tr><th>アプリ</th><th><code>azp</code></th><td th:text="${azp}"></td></tr>
+		<tr><th>スコープ</th><th><code>scope</code></th><td><span class="tag" th:each="s : ${scopes}" th:text="${s}"></span></td></tr>
+		<tr><th>ロール</th><th><code>realm_access.roles</code></th><td><span class="tag role" th:each="r : ${roles}" th:text="${r}"></span></td></tr>
+		<tr><th>宛先</th><th><code>aud</code></th><td><span class="tag" th:each="a : ${audience}" th:text="${a}"></span></td></tr>
 	</table>
 	<details>
 		<summary>アクセストークンのクレーム(RSに渡すトークン)</summary>
