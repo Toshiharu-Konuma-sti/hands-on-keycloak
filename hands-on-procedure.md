@@ -19,6 +19,13 @@
         - [4. KeycloakのロールをGrafanaのロールにマッピングする](#4-keycloakのロールをgrafanaのロールにマッピングする)
         - [5. (発展)確認ポイント](#5-発展確認ポイント-1)
         - [トラブルシュート](#トラブルシュート-1)
+    - [GoogleアカウントでID連携(フェデレーション)](#googleアカウントでid連携フェデレーション)
+        - [1. GoogleでOAuthクライアントを作成する](#1-googleでoauthクライアントを作成する)
+        - [2. KeycloakにGoogleを登録する](#2-keycloakにgoogleを登録する)
+        - [3. 動作確認](#3-動作確認-1)
+        - [4. (発展)連携したユーザにロールを付ける](#4-発展連携したユーザにロールを付ける)
+        - [5. (発展)確認ポイント](#5-発展確認ポイント-2)
+        - [トラブルシュート](#トラブルシュート-2)
 - [RP と RS の連携(IdP → RP → RS)の体験](#rp-と-rs-の連携idp--rp--rsの体験)
     - [前提](#前提)
     - [スコープとロール](#スコープとロール)
@@ -29,7 +36,7 @@
     - [体験5: アプリの違いを見る(Keycloakがスコープを決める)](#体験5-アプリの違いを見るkeycloakがスコープを決める)
     - [まとめ(期待される結果)](#まとめ期待される結果)
     - [興味のある人向け: 仕組みを読む](#興味のある人向け-仕組みを読む)
-    - [トラブルシュート](#トラブルシュート-2)
+    - [トラブルシュート](#トラブルシュート-3)
 
 
 ## SAML/OIDC連携の演習
@@ -284,6 +291,103 @@ Keycloakのレルムロールは、アクセストークンの`realm_access.role
     -> Scopesに`email`が含まれているか確認する。
 - ロールが常に`Viewer`になる
     -> Role attribute pathの記述(`my-admin-role`等)と、Keycloakのユーザにロールが付与されているかを確認する。
+
+
+### GoogleアカウントでID連携(フェデレーション)
+
+Google が IdP、Keycloak が「ブローカー」(Googleに対してはRP、アプリに対してはIdP)になる。
+Keycloakのログイン画面で[Google]を選ぶと、Googleのログイン画面に移り、認証に成功すると、Keycloakに対応するユーザが作られる。
+(ユーザの認証をGoogleに任せるため、Keycloakには、そのユーザのパスワードは保存されない)
+
+```
+ ブラウザ ──▶ アプリ(RP / Grafana など) ──▶ Keycloak ──[Googleでログイン]──▶ Google
+                                                ▲                                │
+                                                └────────(認証結果)───────────────┘
+```
+
+- 無料のGoogleアカウント(個人の`@gmail.com`でよい)を使う。Google Workspaceは不要。
+- OAuthクライアントの作成に、課金設定やクレジットカードの登録は要らない。
+- ブラウザがGoogleにアクセスでき、Keycloakのコンテナがインターネットに出られること。(ログイン後に、KeycloakがGoogleのサーバと直接通信する)
+
+#### 1. GoogleでOAuthクライアントを作成する
+
+Google Cloudコンソールの画面は、見直しが入ることがある。名前が違う場合は、近い項目を探す。
+
+1. https://console.cloud.google.com/ にGoogleアカウントでログインし、プロジェクトを作成する。(例: `keycloak-handson`)
+2. 左メニュー[APIとサービス] > [OAuth同意画面](新しい画面では[Google Auth Platform])を開き、[開始]を押して、以下を入力する。
+    - アプリ名             : Keycloakハンズオン(任意)
+    - ユーザーサポートメール : 自分のメールアドレス
+    - 対象(ユーザーの種類)  : 外部
+    - 連絡先メールアドレス   : 自分のメールアドレス
+    - [Google APIサービスのユーザーデータに関するポリシーに同意]にチェックして[作成]
+3. 公開ステータスが「テスト」であることを確認し、[テストユーザー]に、ログインに使うGoogleアカウントのメールアドレスを追加して保存する。
+    - 「テスト」のままで使える。審査は要らない。
+    - テストユーザー以外のアカウントは、ログインできない。(最大100人)
+4. [認証情報](新しい画面では[クライアント]) > [認証情報を作成] > [OAuthクライアントID]を選び、以下を入力して[作成]する。
+    - アプリケーションの種類 : ウェブ アプリケーション
+    - 名前                   : keycloak(任意)
+    - 承認済みのリダイレクトURI : http://localhost:8080/realms/handson/broker/google/endpoint
+5. 表示される`クライアントID`と`クライアントシークレット`を控える。
+    - シークレットは、他人に見せない。ファイルやGitにも保存しない。
+
+#### 2. KeycloakにGoogleを登録する
+
+1. http://localhost:8080/admin/ にログインし、`handson`レルムを選択する。
+2. [Identity providers]を開き、[Google]を選ぶ。
+3. 以下を入力して[Add]する。
+    - Client ID     : 手順1-5で控えたクライアントID
+    - Client Secret : 手順1-5で控えたクライアントシークレット
+    - (その他は既定のまま)
+4. 画面に表示される`Redirect URI`が、手順1-4で入力した値(`http://localhost:8080/realms/handson/broker/google/endpoint`)と同じことを確認する。
+    - 違う場合は、Googleの[承認済みのリダイレクトURI]を、表示された値に直す。
+
+#### 3. 動作確認
+
+1. シークレットウィンドウで http://localhost:8080/realms/handson/account/ を開く。(アカウントコンソール)
+2. Keycloakのログイン画面に、[Google]のボタンが出ていることを確認して、押す。
+3. Googleのログイン画面に移る。手順1-3のテストユーザーのアカウントでログインする。
+    - 「このアプリはGoogleで確認されていません」と表示された場合は、[続行](または[詳細] > [安全ではないページに移動])を選ぶ。(テスト中のアプリのため)
+    - メールアドレスやプロフィールの共有に同意する。
+4. 初回のみ、Keycloakの「アカウント情報の更新」の画面が出ることがある。内容を確認して[送信]する。
+5. Keycloakのアカウントコンソールにログインできることを確認する。
+6. 別のウィンドウで管理画面を開き、[Users]に、Googleのメールアドレスのユーザが作られていることを確認する。
+    - そのユーザの[Identity provider links]タブに、`google`の連携が出ている。
+
+#### 4. (発展)連携したユーザにロールを付ける
+
+Googleの連携で作られたユーザは、`my-staff-role`などのロールを持たない。
+そのため、RPとRSの体験(後の章)で、ロールが必要なAPIは、403になる。ロールは、グループに入れて付ける。
+
+1. 手動で付ける場合: [Users] > 手順3-6のユーザ > [Groups] > [Join group]で、`my-staff-grp`に追加する。
+2. 初回のログイン時に、自動で付ける場合: [Identity providers] > [google] > [Mappers] > [Add mapper]で、以下を入力して[Save]する。
+    - Name        : staff-group
+    - Sync mode override : Import
+    - Mapper type : Hardcoded Group
+    - Group       : /my-staff-grp
+    - これは、これから作られるユーザに効く。作成済みのユーザには効かない。(手動で追加するか、ユーザを削除して作り直す)
+3. 確認する。RPの画面(http://localhost:8222/)でアプリを選んで[ログイン]し、Keycloakのログイン画面の[Google]を押して、Googleでログインする。
+   [取得したトークンの中身]のロールに、`my-staff-role`が入っている。
+
+#### 5. (発展)確認ポイント
+
+- Keycloakのアカウントコンソール(http://localhost:8080/realms/handson/account/) > [Account security] > [Linked accounts]に、`google`との連携が表示される。
+- Keycloak管理画面 > [Users] > 連携したユーザ > [Credentials]に、パスワードが無い。(認証をGoogleに任せているため)
+- Googleのアカウント設定の[セキュリティ] > [サードパーティのアクセス]で、このアプリへのアクセス許可を確認・取り消しできる。
+- Googleでログインしたユーザでも、Grafana(OIDC連携)やRPにログインできる。(Keycloakの[Google]ボタンから入るだけで、アプリ側の設定は同じ)
+
+#### トラブルシュート
+
+- Googleの画面で`Error 400: redirect_uri_mismatch`と表示される
+    -> Googleの[承認済みのリダイレクトURI]が、`http://localhost:8080/realms/handson/broker/google/endpoint`と完全に一致していない。
+       (末尾のスラッシュ、レルム名`handson`、プロバイダのAlias`google`を確認する)
+- Googleの画面で`Error 403: access_denied`(アプリがテスト中で、承認されたテスターのみアクセスできる)と表示される
+    -> ログインに使うアカウントが、[テストユーザー]に追加されていない。追加する。
+- Keycloakで`Unexpected error when authenticating with identity provider`と表示される
+    -> Client Secretが違う、または、Keycloakのコンテナがインターネットに出られない。`docker logs keycloak`に、`invalid_client`などが出る。
+- Keycloakのログイン画面に[Google]のボタンが出ない
+    -> [Identity providers] > [google]の`Enabled`がOnか、`Hide on login page`がOffかを確認する。
+- コンテナを作り直したら、[Google]のボタンが消えた
+    -> Keycloakのデータは保存されないため、手順2から、やり直す。(Googleで作ったクライアントIDとシークレットは、そのまま使える)
 
 
 ## RP と RS の連携(IdP → RP → RS)の体験
