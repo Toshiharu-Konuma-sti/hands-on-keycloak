@@ -349,8 +349,8 @@ RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`
 | API                                  | 必要な条件                                                              |
 |--------------------------------------|---------------------------------------------------------------------|
 | `GET  /apis/whoami`                  | 認証のみ(トークンの中身を返す)                                          |
-| `GET  /apis/expenses`                | スコープ `expenses:read`(自分が申請した経費だけ返す)                     |
-| `POST /apis/expenses`                | スコープ `expenses:write`(経費の申請)                                 |
+| `GET  /apis/expenses`                | スコープ `expenses:read` **かつ** ロール `my-staff-role`(一般社員以上)(自分が申請した経費だけ返す) |
+| `POST /apis/expenses`                | スコープ `expenses:write` **かつ** ロール `my-staff-role`(一般社員以上)(経費の申請) |
 | `GET  /apis/expenses/pending`        | スコープ `expenses:read` **かつ** ロール `my-manager-role`(課長以上)(承認待ちの一覧) |
 | `POST /apis/expenses/{id}/approve`   | スコープ `expenses:approve` **かつ** ロール `my-admin-role`(部長のみ)(経費の承認)       |
 
@@ -377,7 +377,7 @@ RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`
 結果はボタンのすぐ下に表示される。ページは読み直されないため、スクロール位置はそのままで、何度でも続けて試せる。
 (最新の結果と、これまでの呼び出しの履歴、下の「通信のトレース」が更新される)
 
-1. `GET 経費の一覧(自分の分)`を押す。→ **200**。`expenses:read`があるため。staff.siosが申請した2件が返る。
+1. `GET 経費の一覧(自分の分)`を押す。→ **200**。`expenses:read`とロール`my-staff-role`があるため。staff.siosが申請した2件が返る。
 2. `POST 経費を申請する`を押す。→ **403**。レスポンスの`required`と`granted`を見比べる。申請に必要な`expenses:write`が、このトークンには無い。
 3. `GET 承認待ちの一覧`を押す。→ **403**。スコープ`expenses:read`はあるが、課長以上のロール`my-manager-role`が無い。
 
