@@ -114,6 +114,7 @@ call_get_client_scopes()
 # $5: redirect URL
 # $6: flag of 'consentRequired' (This is a flag whether to display the consent screen or not.)
 # $7: (optional) client's display name. Without it, the client id is displayed on the consent screen.
+# $8: (optional) login theme's name for this client. Without it, the realm's login theme is used.
 call_create_client()
 {
 	REDIRCT=$(echo $5 | sed -e 's/,/","/g')
@@ -122,7 +123,11 @@ call_create_client()
 	if [ -n "$7" ]; then
 		NAME_JSON="\"name\": \"$7\", "
 	fi
-	JSON="{\"clientId\": \"$4\", ${NAME_JSON}\"enabled\": true, \"secret\": \"my-secret\", \"redirectUris\": [\"$REDIRCT\"], \"webOrigins\": [\"$WEB_ORG\"], \"publicClient\": false, \"consentRequired\": $6, \"fullScopeAllowed\": true, \"attributes\": {\"post.logout.redirect.uris\": \"+\"}}"
+	THEME_JSON=""
+	if [ -n "$8" ]; then
+		THEME_JSON=", \"login_theme\": \"$8\""
+	fi
+	JSON="{\"clientId\": \"$4\", ${NAME_JSON}\"enabled\": true, \"secret\": \"my-secret\", \"redirectUris\": [\"$REDIRCT\"], \"webOrigins\": [\"$WEB_ORG\"], \"publicClient\": false, \"consentRequired\": $6, \"fullScopeAllowed\": true, \"attributes\": {\"post.logout.redirect.uris\": \"+\"${THEME_JSON}}}"
 
 	curl -v POST \
 		"$1/admin/realms/$3/clients" \

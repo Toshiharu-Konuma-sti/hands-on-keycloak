@@ -1,0 +1,134 @@
+/* 経費申請アプリ(app-expense-claim)用。RPの画面と同じ、薄い青の背景と緑の見出しにする */
+
+:root {
+    --expense-green-dark: #1f6b43;
+    --expense-green-start: #2f8f5b;
+    --expense-green-end: #7cc99c;
+    --keycloak-card-top-color: var(--expense-green-dark);
+}
+
+.login-pf body {
+    background: #f7faff;
+}
+
+/* 画面上部: ロゴと、ブランド名(経費申請アプリ)を横に並べる */
+#kc-header-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--expense-green-dark) !important;
+    text-transform: none;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+#kc-header-wrapper::before {
+    content: "";
+    flex: none;
+    width: 48px;
+    height: 48px;
+    background: url("../img/logo.svg") no-repeat center / contain;
+}
+
+/* ダイアログを画面の中央ではなく、上寄りに置く(ロゴを横並びにした分、全体を上へ) */
+.pf-v5-c-login {
+    align-items: flex-start;
+    padding-top: 2vh;
+}
+
+#kc-header {
+    margin-bottom: 1rem;
+}
+
+/* カードの見出し: 緑のグラデーションの帯 */
+.pf-v5-c-login__main-header {
+    background: linear-gradient(90deg, var(--expense-green-start) 0%, var(--expense-green-end) 100%);
+    border-top: 0;
+    border-bottom: 3px solid var(--expense-green-dark);
+    border-radius: 4px 4px 0 0;
+}
+
+.pf-v5-c-login__main-header .pf-v5-c-title {
+    color: #fff;
+    font-size: 1.15rem;
+}
+
+/* 言語の選択欄を細くして、見出しに幅を譲る */
+.pf-v5-c-login__main-header-utilities {
+    width: 7rem;
+    flex-shrink: 0;
+}
+
+/* 見出しの帯と、フォームの間を広げる */
+.pf-v5-c-login__main-body {
+    padding-top: 1.5rem;
+}
+
+/* 入力欄やボタンの領域は、ダイアログを広げても、標準の幅(34rem)のまま、中央に寄せる */
+.pf-v5-c-login__main-body,
+.pf-v5-c-login__main-footer {
+    width: 100%;
+    max-width: 34rem;
+    margin-inline: auto;
+}
+
+/* ダイアログの横幅を、標準(34rem)の1.25倍にする。標準では、親要素の最大幅(500px)や、広い画面での左右の余白でも
+   幅が削られるため、最大幅と余白も指定する */
+.pf-v5-c-login__container {
+    max-width: 42.5rem;
+    padding-inline: 0;
+    grid-template-columns: min(42.5rem, 100%);
+}
+
+/* ダイアログ全体の角を丸くする。はみ出す見出しの帯の角も、一緒に切り取る */
+.pf-v5-c-login__main {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+/* ボタン: 丸みと、RPのボタンと同じ2色グラデーション。クリックで押し込まれる */
+.pf-v5-c-button.pf-m-primary,
+.pf-v5-c-button.pf-m-secondary {
+    border-radius: 50px;
+    font-weight: 600;
+    transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.2s ease;
+}
+
+.pf-v5-c-button.pf-m-primary::after,
+.pf-v5-c-button.pf-m-secondary::after {
+    border-radius: 50px;
+}
+
+.pf-v5-c-button.pf-m-primary {
+    background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    box-shadow: 0 4px 0 #4f3a7a, 0 6px 10px rgba(79, 58, 122, 0.35);
+}
+
+.pf-v5-c-button.pf-m-secondary {
+    color: #764ba2;
+    box-shadow: 0 4px 0 #cfc3e6;
+}
+
+.pf-v5-c-button.pf-m-secondary::after {
+    border-color: #764ba2;
+}
+
+.pf-v5-c-button.pf-m-primary:hover,
+.pf-v5-c-button.pf-m-secondary:hover {
+    filter: brightness(1.06);
+}
+
+.pf-v5-c-button.pf-m-primary:active,
+.pf-v5-c-button.pf-m-secondary:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #4f3a7a;
+}
+
+/* 同意画面の見出し: メッセージ中の改行(\n)を、そのまま改行として表示する。
+   テンプレートの先頭の改行が、空の1行になるため、その1行ぶん(1lh)を詰める */
+#kc-page-title p {
+    white-space: pre-line;
+    margin-top: -1lh;
+}
