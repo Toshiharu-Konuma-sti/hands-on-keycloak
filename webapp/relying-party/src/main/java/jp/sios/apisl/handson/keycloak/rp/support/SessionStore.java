@@ -33,11 +33,11 @@ public class SessionStore {
 
 	// ---- ログインの途中 ----------------------------------------------------------------------
 
-	// 前回のログイン結果を捨てて、新しいログインの途中の値(state, nonce, PKCEのverifier)を保存する
+	// 新しいログインを始める。通信のトレースと前回のエラーは消すが、トークン(いまのログイン)は、新しいログインが成功するまで残す。
+	// 途中の値(state, nonce, PKCEのverifier)と、試したアプリ・スコープ(画面の選択の復元用)を保存する
 	public void startLogin(String clientId, List<String> requestedScopes, String state, String nonce, String verifier) {
-		for (String key : List.of(ACCESS_TOKEN, ID_TOKEN, ACCESS_CLAIMS, ID_CLAIMS, STEPS, CALLS, LOGIN_ERROR)) {
-			session.removeAttribute(key);
-		}
+		session.removeAttribute(STEPS);
+		session.removeAttribute(LOGIN_ERROR);
 		session.setAttribute(CLIENT_ID, clientId);
 		session.setAttribute(REQUESTED_SCOPES, requestedScopes);
 		session.setAttribute(STATE, state);
@@ -45,7 +45,7 @@ public class SessionStore {
 		session.setAttribute(VERIFIER, verifier);
 	}
 
-	// ログインしていないときや、ログアウト後は null
+	// 直前に試したログインのアプリ。ログイン中のアプリは、トークンのazpで分かる。ログアウト後は null
 	public String clientId() {
 		return (String) session.getAttribute(CLIENT_ID);
 	}
@@ -69,8 +69,10 @@ public class SessionStore {
 
 	// ---- ログインの結果 ----------------------------------------------------------------------
 
+	// ログインに成功したときに、古いトークンと置き換える。APIの呼び出し履歴も、ここでリセットする
 	public void saveTokens(String accessToken, String idToken,
 			Map<String, Object> accessClaims, Map<String, Object> idClaims) {
+		session.removeAttribute(CALLS);
 		session.setAttribute(ACCESS_TOKEN, accessToken);
 		session.setAttribute(ID_TOKEN, idToken);
 		session.setAttribute(ACCESS_CLAIMS, accessClaims);

@@ -6,8 +6,11 @@
     </linearGradient>
   </defs>
   <rect width="96" height="96" rx="20" fill="url(#g)"/>
-  <path d="M30 18H66a4 4 0 0 1 4 4V78L64.5 82L59 78L53.5 82L48 78L42.5 82L37 78L31.5 82L26 78V22a4 4 0 0 1 4-4Z" fill="#fff"/>
-  <path d="M34 34H62M34 44H62M34 54H48" stroke="#2f8f5b" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="62" cy="62" r="10" fill="#3f6fb5"/>
-  <path d="M57 62l4 4 7-8" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 万年筆のペン先 -->
+  <g transform="rotate(40 48 48)">
+    <rect x="38" y="8" width="20" height="10" rx="3" fill="#fff"/>
+    <path d="M40 22H56C64 30 66 44 60 56L48 86L36 56C30 44 32 30 40 22Z" fill="#fff"/>
+    <path d="M48 52V80" stroke="#2f8f5b" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="48" cy="46" r="5" fill="#2f8f5b"/>
+  </g>
 </svg>

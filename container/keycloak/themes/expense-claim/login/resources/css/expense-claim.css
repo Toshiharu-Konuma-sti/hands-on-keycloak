@@ -1,14 +1,14 @@
-/* 経費申請アプリ(app-expense-claim)用。RPの画面と同じ、薄い青の背景と緑の見出しにする */
+/* 経費申請アプリ(app-expense-claim)用。RPの画面と同じ、薄い緑の背景と緑の見出しにする。帯の色は、変数で指定する(承認アプリのテーマが上書きする) */
 
 :root {
-    --expense-green-dark: #1f6b43;
-    --expense-green-start: #2f8f5b;
-    --expense-green-end: #7cc99c;
-    --keycloak-card-top-color: var(--expense-green-dark);
+    --band-dark: #1f6b43;
+    --band-start: #2f8f5b;
+    --band-end: #7cc99c;
+    --keycloak-card-top-color: var(--band-dark);
 }
 
 .login-pf body {
-    background: #f7faff;
+    background: #f4fbf6;
 }
 
 /* 画面上部: ロゴと、ブランド名(経費申請アプリ)を横に並べる */
@@ -17,7 +17,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
-    color: var(--expense-green-dark) !important;
+    color: var(--band-dark) !important;
     text-transform: none;
     letter-spacing: 1px;
     font-weight: 600;
@@ -41,11 +41,11 @@
     margin-bottom: 1rem;
 }
 
-/* カードの見出し: 緑のグラデーションの帯 */
+/* カードの見出し: グラデーションの帯 */
 .pf-v5-c-login__main-header {
-    background: linear-gradient(90deg, var(--expense-green-start) 0%, var(--expense-green-end) 100%);
+    background: linear-gradient(90deg, var(--band-start) 0%, var(--band-end) 100%);
     border-top: 0;
-    border-bottom: 3px solid var(--expense-green-dark);
+    border-bottom: 3px solid var(--band-dark);
     border-radius: 4px 4px 0 0;
 }
 

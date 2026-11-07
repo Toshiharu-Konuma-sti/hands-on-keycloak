@@ -26,7 +26,7 @@
 	<form method="post" th:action="@{/login}">
 		<p class="status">いまのRP:
 			<b th:if="${currentApp != null}" th:text="${currentApp.label() + '(ログイン中)'}"></b>
-			<b th:unless="${currentApp != null}">このRPを振る舞わせるアプリを選択してログインしてください</b>
+			<b class="prompt" th:unless="${currentApp != null}">このRPを振る舞わせるアプリを選択してログインしてください</b>
 		</p>
 		<div class="app-select">
 			<p>
@@ -52,7 +52,8 @@
 		<span class="note">Keycloakでログイン</span>
 	</form>
 	<div class="error" th:if="${loginError != null}">
-		<b>ログインに失敗した(Keycloakからのエラー)</b>
+		<b th:if="${loggedIn}">新たなログインに失敗しました。元のログイン状態を維持しています。</b>
+		<b th:unless="${loggedIn}">ログインに失敗しました。</b>
 		<div>error: <code th:text="${loginError.error()}"></code></div>
 		<div th:if="${loginError.description() != null}">error_description: <code th:text="${loginError.description()}"></code></div>
 		<div th:if="${loginError.hint() != null}" th:text="${loginError.hint()}"></div>

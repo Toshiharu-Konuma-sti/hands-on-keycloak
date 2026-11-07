@@ -1,6 +1,13 @@
 body { font-family: sans-serif; max-width: 1000px; margin: 1em auto; padding: 0 1em; color: #222; }
 /* h1 { font-size: 1.4em; } */
-h2 { font-size: 1.1em; margin-top: 1.6em; padding: .4em .9em; color: #fff; background: linear-gradient(90deg, #2f8f5b 0%, #7cc99c 100%); border-bottom: 3px solid #1f6b43; border-radius: 4px 4px 0 0; }
+/* 見出しの帯の色。どのアプリでもないとき(初期表示、ログアウト後)は濃いグレー */
+:root { --band-start: #4a4f55; --band-end: #9097a0; --band-border: #2e3236; }
+/* ページのタイトル: [アイコン] Relying Party (RP)：アプリ名。文字色は帯の濃い色で、Keycloakのログイン画面のタイトルと同じ */
+h1 { color: var(--band-border); font-weight: 600; letter-spacing: 1px; }
+h1::before { content: ""; display: inline-block; vertical-align: middle; width: 48px; height: 48px; margin-right: .6rem; background: url("../img/logo-neutral.svg") no-repeat center / contain; }
+body[data-app="app-expense-claim"] h1::before { background-image: url("../img/logo-claim.svg"); }
+body[data-app="app-expense-approval"] h1::before { background-image: url("../img/logo-approval.svg"); }
+h2 { font-size: 1.1em; margin-top: 1.6em; padding: .4em .9em; color: #fff; background: linear-gradient(90deg, var(--band-start) 0%, var(--band-end) 100%); border-bottom: 3px solid var(--band-border); border-radius: 4px 4px 0 0; }
 section { margin-bottom: 1em; }
 pre { background: #f4f4f4; padding: .6em; overflow-x: auto; margin: .3em 0; font-size: .85em; }
 table { border-collapse: collapse; } th, td { border: 1px solid #ccc; padding: .3em .7em; text-align: left; vertical-align: top; }
@@ -38,10 +45,11 @@ ul.token-summary li { margin: .2em 0; }
 @keyframes flash { from { background: #ffe58a; } to { background: #fafafa; } }
 
 /* ログイン中のアプリに合わせて、ページの背景色を変える */
-body[data-app="app-expense-claim"] { background: #f7faff; }
-body[data-app="app-expense-approval"] { background: #fffdf0; }
+body[data-app="app-expense-claim"] { background: #f4fbf6; --band-start: #2f8f5b; --band-end: #7cc99c; --band-border: #1f6b43; }
+body[data-app="app-expense-approval"] { background: #fffdf0; --band-start: #b84a00; --band-end: #f0922d; --band-border: #8a3600; }
 
 .status { margin: .4em 0; }
+.status .prompt { color: #d9534f; }
 .app-select { border: 2px solid #ccc; border-radius: 6px; padding: .3em .9em; margin: .4em 0 .8em; background: #fff; }
 .app-select p { margin: 0; }
 /* アプリが未選択の間だけ、選択を促す赤系の枠にする */

@@ -123,10 +123,9 @@ public class AuthorizationService {
 			error != null ? "(エラーのため、トークンには交換しない)" : "(RPはこのcodeをトークンに交換する)"));
 
 		if (error != null) {
-			// 失敗の理由を画面の上部に表示する
+			// 失敗の理由を画面の上部に表示する。それまでのログイン(トークン)は、そのまま残る
 			String hint = "invalid_scope".equals(error)
-				? "選んだアプリに割り当てられていないスコープを要求したため、Keycloakがログインを拒否した。"
-					+ "アプリを変えるか、要求するスコープを見直す。"
+				? "選んだアプリに割り当てられていないスコープを要求したため、Keycloakがログインを拒否しました。"
 				: null;
 			store.saveLoginError(new LoginError(error, errorDescription, hint));
 			return;

@@ -1,0 +1,11 @@
+/* 経費承認アプリ(app-expense-approval)用。経費申請アプリと同じ作りで、背景を薄い黄色、帯を濃いオレンジのグラデーションにする(RPの承認アプリと同じ色) */
+
+:root {
+    --band-dark: #8a3600;
+    --band-start: #b84a00;
+    --band-end: #f0922d;
+}
+
+.login-pf body {
+    background: #fffdf0;
+}
