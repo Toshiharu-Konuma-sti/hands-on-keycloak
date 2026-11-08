@@ -48,12 +48,12 @@ public class ApiCallService {
 			"アクセストークンをAuthorizationヘッダに付けて、Resource Serverを呼ぶ。許可するかどうかは、RSがトークンの中身で判断する。",
 			shownRequest,
 			"HTTP " + res.status() + "\n" + http.pretty(http.parseAny(res.body()))));
-		store.calls().add(toCallResult(store.calls().size() + 1, api.method(), actualPath, res));
+		store.calls().add(toCallResult(store.calls().size() + 1, api.method(), actualPath, shownRequest, res));
 		return true;
 	}
 
 	// 403のときはRSが返すrequired/grantedを取り出して、画面で見比べられるようにする
-	private CallResult toCallResult(int seq, String method, String path, Response res) {
+	private CallResult toCallResult(int seq, String method, String path, String request, Response res) {
 		Object parsed = http.parseAny(res.body());
 		String message = null;
 		String required = null;
@@ -70,7 +70,8 @@ public class ApiCallService {
 				message = message + "(" + d + ")";
 			}
 		}
-		return new CallResult(seq, method, path, res.status(), message, required, scopes, roles, http.pretty(parsed));
+		return new CallResult(seq, method, path, res.status(), message, required, scopes, roles, request,
+			"HTTP " + res.status() + "\n" + http.pretty(parsed));
 	}
 
 	private static List<String> strings(Object value) {

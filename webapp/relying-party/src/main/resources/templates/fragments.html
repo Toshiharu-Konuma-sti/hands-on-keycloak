@@ -17,9 +17,13 @@
 			<tr><th>トークンが持つスコープ</th><td><span class="tag" th:each="s : ${latest.grantedScopes()}" th:text="${s}"></span></td></tr>
 			<tr><th>トークンが持つロール</th><td><span class="tag role" th:each="r : ${latest.grantedRoles()}" th:text="${r}"></span></td></tr>
 		</table>
-		<details>
-			<summary>レスポンスの本文</summary>
-			<pre th:text="${latest.body()}"></pre>
+		<details open>
+			<summary th:text="${'APIを呼ぶ: ' + latest.method() + ' ' + latest.path() + '  →  ' + latest.status()}"></summary>
+			<p class="note">アクセストークンをAuthorizationヘッダに付けて、Resource Serverを呼ぶ。許可するかどうかは、RSがトークンの中身で判断する。</p>
+			<b>リクエスト</b>
+			<pre th:text="${latest.request()}"></pre>
+			<b>レスポンス</b>
+			<pre th:text="${latest.response()}"></pre>
 		</details>
 	</div>
 	<div th:if="${!history.isEmpty()}">
@@ -41,7 +45,7 @@
 		<button type="submit">トレースと履歴を消去</button>
 	</form>
 	<p class="note" th:if="${steps.isEmpty()}">ログインすると、ここに各ステップの通信内容が表示される。</p>
-	<details th:each="s, it : ${steps}" th:open="${it.last}">
+	<details th:each="s : ${steps}">
 		<summary th:text="${s.title()}"></summary>
 		<p class="note" th:text="${s.note()}"></p>
 		<b>リクエスト</b>
