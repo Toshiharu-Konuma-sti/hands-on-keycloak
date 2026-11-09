@@ -39,8 +39,15 @@ public class ExpenseService {
 			.toList();
 	}
 
+	public List<Expense> approved() {
+		return expenses.values().stream()
+			.filter(e -> e.status().equals("承認済み"))
+			.sorted(Comparator.comparingInt(Expense::id))
+			.toList();
+	}
+
 	public Expense claim(String applicant, String title, int amount) {
-		Expense e = new Expense(nextId.getAndIncrement(), applicant, title, amount, "申請中", null);
+		Expense e = new Expense(nextId.getAndIncrement(), title, amount, "申請中", applicant, null);
 		expenses.put(e.id(), e);
 		return e;
 	}
@@ -51,8 +58,8 @@ public class ExpenseService {
 		if (target == null) {
 			return Optional.empty();
 		}
-		Expense approved = new Expense(target.id(), target.applicant(), target.title(), target.amount(),
-			"承認済み", approver);
+		Expense approved = new Expense(target.id(), target.title(), target.amount(),
+			"承認済み", target.applicant(), approver);
 		expenses.put(id, approved);
 		return Optional.of(approved);
 	}

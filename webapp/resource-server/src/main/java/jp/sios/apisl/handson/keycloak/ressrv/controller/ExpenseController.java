@@ -67,7 +67,7 @@ public class ExpenseController {
 	}
 
 	// 承認に関するAPIも、スコープ と ロール の両方を満たしたときだけ許可する。
-	//   承認待ちの一覧: 「読む」スコープ(expenses:read)と、課長以上のロール
+	//   承認待ち・承認済みの一覧: 「読む」スコープ(expenses:read)と、課長以上のロール
 	//   経費の承認    : 「承認」スコープ(expenses:approve)と、部長のロール
 	// ロールは「一般社員(my-staff-role) < 課長(my-manager-role) < 部長(my-admin-role)」の3段階。
 	// 上位のロールは下位を含む(Keycloakの複合ロール)ため、部長のトークンにはすべてのロールが入っている。
@@ -82,5 +82,12 @@ public class ExpenseController {
 	public Expense approve(@PathVariable int id, @AuthenticationPrincipal Jwt jwt) {
 		return expenses.approve(id, jwt.getClaimAsString("preferred_username"))
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "経費が見つからない: " + id));
+	}
+
+	// 承認結果を確かめるための一覧。承認待ちの一覧と同じ条件で許可する。承認済みの経費を申請者を問わず返す
+	@GetMapping("/expenses/approved")
+	@PreAuthorize("hasAuthority('SCOPE_expenses:read') and hasRole('my-manager-role')")
+	public List<Expense> approved() {
+		return expenses.approved();
 	}
 }

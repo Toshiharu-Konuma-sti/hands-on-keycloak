@@ -115,6 +115,27 @@ class AccessControlTests {
 	}
 
 	@Test
+	void approved_needsReadScopeAndManagerRole() throws Exception {
+		mvc.perform(get("/apis/expenses/approved")
+				.with(token("taro.sios", "SCOPE_expenses:read", "ROLE_my-manager-role", "ROLE_my-staff-role")))
+			.andExpect(status().isOk());
+	}
+
+	@Test
+	void approvedWithReadScopeButAsStaff_403() throws Exception {
+		mvc.perform(get("/apis/expenses/approved")
+				.with(token("staff.sios", "SCOPE_expenses:read", "ROLE_my-staff-role")))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void approvedWithManagerRoleButWithoutReadScope_403() throws Exception {
+		mvc.perform(get("/apis/expenses/approved")
+				.with(token("taro.sios", "SCOPE_expenses:write", "ROLE_my-manager-role", "ROLE_my-staff-role")))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
 	void approve_needsScopeAndAdminRole() throws Exception {
 		mvc.perform(post("/apis/expenses/1/approve").with(csrf())
 				.with(token("admin.sios", "SCOPE_expenses:approve",
