@@ -1,9 +1,29 @@
-body { font-family: sans-serif; max-width: 1000px; margin: 1em auto; padding: 0 1em; color: #222; }
+body { font-family: sans-serif; margin: 0; color: #222; height: 100vh; display: flex; flex-direction: column; }
+/* 画面構成: ①上部にタイトル / ②左にログイン・メニュー / ③右にAPI呼び出しなどの機能。横幅いっぱいに使う */
+.app-header { flex: none; padding: 0 1.2em; border-bottom: 3px solid var(--band-border); background: #fff; }
+/* タイトルは固定。②と③は、それぞれ独立してスクロールする */
+.layout { flex: 1; min-height: 0; display: grid; grid-template-columns: 17em 1fr; }
+.sidebar { overflow-y: auto; box-sizing: border-box; padding: 1em; background: #eef0f3; border-right: 1px solid #ccc; }
+.content { overflow-y: auto; padding: 0 1.5em 2em; min-width: 0; scroll-behavior: smooth; }
+.side-title { margin: 0 0 .4em; font-size: .8em; font-weight: bold; letter-spacing: .1em; color: #666; }
+.menu { margin-bottom: 1.4em; }
+.menu a { display: block; margin: .35em 0; padding: .6em .8em; background: #fff; border: 1px solid #ccc; border-left: 5px solid var(--band-border); border-radius: 4px; color: var(--band-border); font-weight: 600; text-decoration: none; transition: background .15s, transform .1s; }
+.menu a:hover { background: var(--band-end); color: #fff; transform: translateX(3px); }
+.sidebar .login { margin: 0; }
+.sidebar .login > .status { margin: 0 0 .6em; }
+.sidebar details { background: #fff; padding: .4em .7em; }
+.sidebar button { width: 100%; min-width: 0; margin-top: .6em; }
+.sidebar button.secondary { background: #6c757d; box-shadow: 0 3px 0 #495057; }
+.sidebar .app-select label, .sidebar details form label { display: block; margin: .2em 0; }
+.sidebar .app-select { padding: .3em .6em; }
+.sidebar .error { font-size: .85em; word-break: break-word; }
+details.help { margin: .6em 0 1em; }
+details.help table { margin: .5em 0; }
 /* h1 { font-size: 1.4em; } */
 /* 見出しの帯の色。どのアプリでもないとき(初期表示、ログアウト後)は濃いグレー */
 :root { --band-start: #4a4f55; --band-end: #9097a0; --band-border: #2e3236; }
 /* ページのタイトル: [アイコン] Relying Party (RP)：アプリ名。文字色は帯の濃い色で、Keycloakのログイン画面のタイトルと同じ */
-h1 { color: var(--band-border); font-weight: 600; letter-spacing: 1px; }
+h1 { margin: .25em 0; color: var(--band-border); font-weight: 600; letter-spacing: 1px; }
 h1::before { content: ""; display: inline-block; vertical-align: middle; width: 48px; height: 48px; margin-right: .6rem; background: url("../img/logo-neutral.svg") no-repeat center / contain; }
 body[data-app="app-expense-claim"] h1::before { background-image: url("../img/logo-claim.svg"); }
 body[data-app="app-expense-approval"] h1::before { background-image: url("../img/logo-approval.svg"); }
@@ -54,3 +74,30 @@ body[data-app="app-expense-approval"] { background: #fffdf0; --band-start: #b84a
 .app-select p { margin: 0; }
 /* アプリが未選択の間だけ、選択を促す赤系の枠にする */
 .app-select:not(:has(input[name=client]:checked)) { border-color: #d9534f; background: #fff5f5; }
+
+/* 構成バナー: IdP → RP(申請/承認) → RS。アクティブなアプリの経路だけを強調する */
+.flow-banner { margin: .8em 0; padding: .4em; background: #fff; border: 1px solid #ccc; border-radius: 6px; }
+.flow-banner svg { display: block; width: 100%; max-width: 900px; margin: 0 auto; height: auto; font-family: inherit; }
+.flow-banner text { text-anchor: middle; }
+.flow-banner .name { font-size: 16px; font-weight: bold; }
+.flow-banner .sub { font-size: 12px; font-weight: normal; }
+.flow-banner .node rect { fill: #f1f3f5; stroke: #4a4f55; stroke-width: 2; }
+.flow-banner .node text { fill: #2e3236; }
+.flow-banner .branch { --c: #888; --bg: #f1f1f1; }
+.flow-banner .branch.claim { --c: #2f8f5b; --bg: #e6f5ec; }
+.flow-banner .branch.approval { --c: #b84a00; --bg: #fff0e0; }
+.flow-banner .branch .box { fill: var(--bg); stroke: var(--c); stroke-width: 2; }
+.flow-banner .branch .line { fill: none; stroke: var(--c); stroke-width: 2; }
+.flow-banner .branch text { fill: var(--c); }
+.flow-banner .branch .badge { display: none; font-size: 10px; font-weight: bold; text-anchor: end; letter-spacing: .08em; }
+.flow-banner .branch.active .box { stroke-width: 3; fill: var(--c); filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .35)); }
+.flow-banner .branch.active text { fill: #fff; }
+.flow-banner .branch.active .line { stroke-width: 4; }
+.flow-banner .branch.active .badge { display: block; }
+.flow-banner .branch.inactive { --c: #aaa; --bg: #f4f4f4; opacity: .55; }
+.flow-banner .branch.inactive .line { stroke-dasharray: 6 5; }
+/* IdPとRSにつながる共通の線は、アクティブなアプリの色にする(未ログインのときは濃いグレー) */
+.flow-banner .trunk path { fill: none; stroke: #4a4f55; stroke-width: 2; stroke-linecap: round; }
+.flow-banner svg[data-active="app-expense-claim"] .trunk path { stroke: #2f8f5b; stroke-width: 4; }
+.flow-banner svg[data-active="app-expense-approval"] .trunk path { stroke: #b84a00; stroke-width: 4; }
+.flow-banner .branch.active .line { stroke-linecap: round; }

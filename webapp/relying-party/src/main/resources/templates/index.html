@@ -7,10 +7,104 @@
 </head>
 <body th:attr="data-app=${currentApp != null ? currentApp.id() : ''}">
 
+<header class="app-header">
 <h1>Relying Party (RP)<span th:if="${currentApp != null}" th:text="'：' + ${currentApp.label()}"></span></h1>
-<p class="note" style="margin-bottom:0">
-	IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れを体験する。
-</p>
+</header>
+
+<div class="layout">
+
+<aside class="sidebar">
+<nav class="menu" th:if="${loggedIn}">
+	<p class="side-title">メニュー</p>
+	<a href="#token">取得したトークンの中身</a>
+	<a href="#api">APIを呼ぶ</a>
+	<a href="#trace-section">通信のトレース</a>
+</nav>
+<section class="login">
+	<p class="side-title" th:text="${loggedIn ? 'ログイン中' : 'ログイン'}">ログイン</p>
+	<p class="status">
+		<b th:if="${currentApp != null}" th:text="${currentApp.label()}"></b>
+		<b class="prompt" th:unless="${currentApp != null}">アプリを選択してログインしてください</b>
+	</p>
+	<details th:open="${!loggedIn or loginError != null}">
+		<summary th:text="${loggedIn ? 'アプリを切り替えてログイン' : 'アプリを選ぶ'}">アプリを選ぶ</summary>
+		<form method="post" th:action="@{/login}">
+			<div class="app-select">
+				<p>
+					<span class="note">アプリ(client_id)</span>
+					<label th:each="c, it : ${clients}">
+						<input type="radio" name="client" required th:value="${c.id()}" th:checked="${c.id() == selectedClient}"> <span th:text="${c.label() + ' (' + c.id() + ')'}"></span>
+					</label>
+				</p>
+			</div>
+			<div>
+				<span class="note">追加で要求するoptionalスコープ</span>
+				<label th:each="s : ${optionalScopes}">
+					<input type="checkbox" name="scope" th:value="${s}" th:checked="${selectedScopes.contains(s)}"> <code th:text="${s}"></code>
+				</label>
+			</div>
+			<button type="submit">ログイン</button>
+		</form>
+	</details>
+	<div class="error" th:if="${loginError != null}">
+		<b th:if="${loggedIn}">新たなログインに失敗しました。元のログイン状態を維持しています。</b>
+		<b th:unless="${loggedIn}">ログインに失敗しました。</b>
+		<div>error: <code th:text="${loginError.error()}"></code></div>
+		<div th:if="${loginError.description() != null}">error_description: <code th:text="${loginError.description()}"></code></div>
+		<div th:if="${loginError.hint() != null}" th:text="${loginError.hint()}"></div>
+	</div>
+	<form method="post" th:action="@{/logout}" th:if="${loggedIn}">
+		<button type="submit" class="secondary">ログアウト</button>
+	</form>
+</section>
+</aside>
+
+<main class="content">
+<!-- IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れ。アクティブなアプリの経路を強調する -->
+<div class="flow-banner">
+<svg viewBox="0 0 900 96" role="img" aria-label="IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れを体験する。"
+	th:attr="data-active=${currentApp != null ? currentApp.id() : ''}">
+	<defs>
+		<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto">
+			<path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/>
+		</marker>
+	</defs>
+
+	<g class="node idp">
+		<rect x="10" y="26" width="170" height="44" rx="8"/>
+		<text x="95" y="45" class="name">IdP</text>
+		<text x="95" y="61" class="sub">Keycloak</text>
+	</g>
+
+	<g class="trunk">
+		<path d="M180,48 H235"/>
+		<path d="M665,48 H710" marker-end="url(#arrow)"/>
+	</g>
+
+	<g class="branch claim" th:classappend="${currentApp == null ? '' : (currentApp.id() == 'app-expense-claim' ? 'active' : 'inactive')}">
+		<path class="line" d="M235,48 V24 H280" marker-end="url(#arrow)"/>
+		<path class="line" d="M620,24 H665 V48"/>
+		<rect class="box" x="280" y="4" width="340" height="40" rx="8"/>
+		<text x="450" y="29" class="name">RP：申請アプリ <tspan class="sub">app-expense-claim</tspan></text>
+		<text x="610" y="17" class="badge">ACTIVE</text>
+	</g>
+
+	<g class="branch approval" th:classappend="${currentApp == null ? '' : (currentApp.id() == 'app-expense-approval' ? 'active' : 'inactive')}">
+		<path class="line" d="M235,48 V72 H280" marker-end="url(#arrow)"/>
+		<path class="line" d="M620,72 H665 V48"/>
+		<rect class="box" x="280" y="52" width="340" height="40" rx="8"/>
+		<text x="450" y="77" class="name">RP：承認アプリ <tspan class="sub">app-expense-approval</tspan></text>
+		<text x="610" y="65" class="badge">ACTIVE</text>
+	</g>
+
+	<g class="node rs">
+		<rect x="710" y="12" width="180" height="72" rx="8"/>
+		<text x="800" y="35" class="name">RS</text>
+		<text x="800" y="54" class="sub">Resource Server</text>
+		<text x="800" y="71" class="sub">Web API</text>
+	</g>
+</svg>
+</div>
 <ul class="note">
 	<li><b>目的</b>: <b>スコープ</b>(アプリ(RP)に許した操作)と、<b>ロール</b>(ユーザーに与えられた役割)が、APIの許可・拒否にどう関わるかを体験して学ぶ。</li>
 	<li><b>題材</b>: 「経費精算」。経費のデータは動作確認用のサンプルで、実際の経費管理はしない。</li>
@@ -21,47 +115,14 @@
 	APIは、スコープとロールの両方を見て実行を許可するか決める。
 </p>
 
-<section>
-	<h2>1. アクティブなアプリ(RP)を選びログイン</h2>
-	<form method="post" th:action="@{/login}">
-		<p class="status">アクティブなアプリ:
-			<b th:if="${currentApp != null}" th:text="${currentApp.label() + '(ログイン中)'}"></b>
-			<b class="prompt" th:unless="${currentApp != null}">このRPを振る舞わせるアプリを選択してログインしてください</b>
-		</p>
-		<div class="app-select">
-			<p>
-				アプリ(client_id):
-				<label th:each="c, it : ${clients}" style="margin-right:1em">
-					<input type="radio" name="client" required th:value="${c.id()}" th:checked="${c.id() == selectedClient}"> <span th:text="${c.label() + ' (' + c.id() + ')'}"></span>
-				</label>
-			</p>
-		</div>
-		<div>
-			追加で要求するoptionalスコープ:
-			<label th:each="s : ${optionalScopes}" style="margin-right:1em">
-				<input type="checkbox" name="scope" th:value="${s}" th:checked="${selectedScopes.contains(s)}"> <code th:text="${s}"></code>
-			</label>
-			<ul class="note">
-				<li><code>expenses:read</code> は default scope のため、追加要求しなくても常に付与</li>
-				<li><code>expenses:write</code> / <code>expenses:approve</code> は optional scope のため、追加要求したときだけ付与</li>
-				<li>Keycloakのアプリ設定では、経費申請アプリへ <code>expenses:read</code>, <code>expenses:write</code> を、経費承認アプリへ <code>expenses:read</code>, <code>expenses:approve</code> を割り当て</li>
-				<li>アプリに割り当てていないスコープを要求すると、Keycloakがエラー(<code>invalid_scope</code>)で拒否</li>
-			</ul>
-		</div>
-		<button type="submit">ログイン</button>
-		<span class="note">Keycloakでログイン</span>
-	</form>
-	<div class="error" th:if="${loginError != null}">
-		<b th:if="${loggedIn}">新たなログインに失敗しました。元のログイン状態を維持しています。</b>
-		<b th:unless="${loggedIn}">ログインに失敗しました。</b>
-		<div>error: <code th:text="${loginError.error()}"></code></div>
-		<div th:if="${loginError.description() != null}">error_description: <code th:text="${loginError.description()}"></code></div>
-		<div th:if="${loginError.hint() != null}" th:text="${loginError.hint()}"></div>
-	</div>
-	<form method="post" th:action="@{/logout}" th:if="${loggedIn}" style="margin-top:.6em">
-		<button type="submit">ログアウト</button>
-		<span class="note">Keycloakのセッションを終了し、画面は初期状態に戻る</span>
-	</form>
+<details class="help" th:open="${!loggedIn}">
+	<summary>ログインの補足(スコープとユーザー)</summary>
+	<ul class="note">
+		<li><code>expenses:read</code> は default scope のため、追加要求しなくても常に付与</li>
+		<li><code>expenses:write</code> / <code>expenses:approve</code> は optional scope のため、追加要求したときだけ付与</li>
+		<li>Keycloakのアプリ設定では、経費申請アプリへ <code>expenses:read</code>, <code>expenses:write</code> を、経費承認アプリへ <code>expenses:read</code>, <code>expenses:approve</code> を割り当て</li>
+		<li>アプリに割り当てていないスコープを要求すると、Keycloakがエラー(<code>invalid_scope</code>)で拒否</li>
+	</ul>
 	<p class="note" style="margin-bottom:.3em">ログインするユーザー(パスワードはユーザー名と同じ)と、付与されるロール:</p>
 	<table class="note compact">
 		<tr><th>ユーザー</th><th>役職</th><th>付与されるロール(上位のロールは下位を含む)</th></tr>
@@ -69,10 +130,10 @@
 		<tr><td>taro.sios</td><td>課長</td><td><span class="tag role">my-manager-role</span> + 一般社員のロール(<span class="tag role">my-staff-role</span>)</td></tr>
 		<tr><td>admin.sios</td><td>部長</td><td><span class="tag role">my-admin-role</span> + 課長と一般社員のロール(<span class="tag role">my-manager-role</span>, <span class="tag role">my-staff-role</span>)</td></tr>
 	</table>
-</section>
+</details>
 
-<section th:if="${loggedIn}">
-	<h2>2. 取得したトークンの中身</h2>
+<section id="token" th:if="${loggedIn}">
+	<h2>1. 取得したトークンの中身</h2>
 	<table>
 		<tr><th>アプリ</th><th><code>azp</code></th><td th:text="${azp}"></td></tr>
 		<tr><th>スコープ</th><th><code>scope</code></th><td><span class="tag" th:each="s : ${scopes}" th:text="${s}"></span></td></tr>
@@ -91,8 +152,8 @@
 	</details>
 </section>
 
-<section th:if="${loggedIn}">
-	<h2>3. APIを呼ぶ</h2>
+<section id="api" th:if="${loggedIn}">
+	<h2>2. APIを呼ぶ</h2>
 	<p class="note" style="margin-bottom:0">いまのトークンが持つもの:</p>
 	<ul class="token-summary">
 		<li>スコープ: <span class="tag" th:each="s : ${scopes}" th:text="${s}"></span></li>
@@ -114,10 +175,13 @@
 	<div th:replace="~{fragments :: apiResult}"></div>
 </section>
 
-<section>
+<section id="trace-section">
 	<h2>通信のトレース</h2>
 	<div th:replace="~{fragments :: trace}"></div>
 </section>
+</main>
+
+</div>
 
 <script th:src="@{/js/app.js}"></script>
 

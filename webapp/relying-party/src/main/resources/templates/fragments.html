@@ -2,7 +2,7 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<!-- 「3. APIを呼ぶ」の結果欄。ページ全体を読み直さずに、JavaScript(fetch)がこの部分だけを差し替える -->
+<!-- 「2. APIを呼ぶ」の結果欄。ページ全体を読み直さずに、JavaScript(fetch)がこの部分だけを差し替える -->
 <div th:fragment="apiResult" id="api-result">
 	<p class="note" th:if="${latest == null}">上のボタンを押すと、ここに結果が表示される。</p>
 	<div th:if="${latest != null}" class="result flash" th:classappend="${latest.statusClass()}">
