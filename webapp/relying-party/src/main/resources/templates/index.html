@@ -22,9 +22,9 @@
 </p>
 
 <section>
-	<h2>1. ログインする</h2>
+	<h2>1. アクティブなアプリ(RP)を選びログイン</h2>
 	<form method="post" th:action="@{/login}">
-		<p class="status">いまのRP:
+		<p class="status">アクティブなアプリ:
 			<b th:if="${currentApp != null}" th:text="${currentApp.label() + '(ログイン中)'}"></b>
 			<b class="prompt" th:unless="${currentApp != null}">このRPを振る舞わせるアプリを選択してログインしてください</b>
 		</p>
@@ -74,12 +74,12 @@
 <section th:if="${loggedIn}">
 	<h2>2. 取得したトークンの中身</h2>
 	<table>
-		<tr><th>ユーザー</th><th><code>preferred_username</code></th><td th:text="${username}"></td></tr>
-		<tr><th>メール</th><th><code>email</code></th><td th:text="${email}"></td></tr>
 		<tr><th>アプリ</th><th><code>azp</code></th><td th:text="${azp}"></td></tr>
 		<tr><th>スコープ</th><th><code>scope</code></th><td><span class="tag" th:each="s : ${scopes}" th:text="${s}"></span></td></tr>
-		<tr><th>ロール</th><th><code>realm_access.roles</code></th><td><span class="tag role" th:each="r : ${roles}" th:text="${r}"></span></td></tr>
 		<tr><th>宛先</th><th><code>aud</code></th><td><span class="tag" th:each="a : ${audience}" th:text="${a}"></span></td></tr>
+		<tr><th>ユーザー</th><th><code>preferred_username</code></th><td th:text="${username}"></td></tr>
+		<tr><th>メール</th><th><code>email</code></th><td th:text="${email}"></td></tr>
+		<tr><th>ロール</th><th><code>realm_access.roles</code></th><td><span class="tag role" th:each="r : ${roles}" th:text="${r}"></span></td></tr>
 	</table>
 	<details>
 		<summary>アクセストークンのクレーム(RSに渡すトークン)</summary>

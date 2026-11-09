@@ -57,7 +57,6 @@ show_url()
  *   - Nextcloud:   http://localhost:8081/
  *   - Relying Party:   http://localhost:8222/
  *   - Resource Server: http://localhost:8111/apis/whoami (needs an access token)
- *   (The first start of Relying Party/Resource Server takes a few minutes to build.)
  ***********************************************************/
 
 EOS
