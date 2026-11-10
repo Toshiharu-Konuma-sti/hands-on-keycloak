@@ -123,9 +123,9 @@
 	<summary>ログインの補足（スコープとユーザー＋ロール）</summary>
 	<p class="note tight">スコープ：</p>
 	<ul class="note">
-		<li><code>expenses:read</code> は default scope のため、追加要求しなくても常に付与</li>
-		<li><code>expenses:write</code> / <code>expenses:approve</code> は optional scope のため、追加要求したときだけ付与</li>
-		<li>Keycloakのアプリ設定では、経費申請アプリへ <code>expenses:read</code>, <code>expenses:write</code> を、経費承認アプリへ <code>expenses:read</code>, <code>expenses:approve</code> を割り当て</li>
+		<li><span class="tag">expenses:read</span> は default scope のため、追加要求しなくても常に付与</li>
+		<li><span class="tag">expenses:write</span> / <span class="tag">expenses:approve</span> は optional scope のため、追加要求したときだけ付与</li>
+		<li>Keycloakのアプリ設定では、経費申請アプリへ <span class="tag">expenses:read</span>, <span class="tag">expenses:write</span> を、経費承認アプリへ <span class="tag">expenses:read</span>, <span class="tag">expenses:approve</span> を割り当て</li>
 		<li>アプリに割り当てていないスコープを要求すると、Keycloakがエラー(<code>invalid_scope</code>)で拒否</li>
 	</ul>
 	<p class="note tight">ログインするユーザー（パスワードはユーザー名と同じ）と、付与されるロール：</p>
