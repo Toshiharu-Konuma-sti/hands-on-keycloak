@@ -41,12 +41,14 @@ public class ApiCallService {
 
 		Response res = http.callApi(api.method(), url, token, api.body());
 
-		String shownRequest = api.method() + " " + url + "\nAuthorization: Bearer " + Tokens.abbreviate(token)
-			+ (api.body() == null ? "" : "\nContent-Type: application/json\n\n" + api.body());
+		String body = api.body() == null ? "" : "\nContent-Type: application/json\n\n" + api.body();
+		String traceRequest = api.method() + " " + url + "\nAuthorization: Bearer " + token + body;
+		// 「2. APIを呼ぶ」の結果欄は長いトークンを省略し、「通信のトレース」は全文を出す
+		String shownRequest = api.method() + " " + url + "\nAuthorization: Bearer " + Tokens.abbreviate(token) + body;
 		store.steps().add(new Step(
 			"5. APIを呼ぶ: " + api.method() + " " + actualPath + "  →  " + res.status(),
-			"アクセストークンをAuthorizationヘッダに付けて、Resource Serverを呼ぶ。許可するかどうかは、RSがトークンの中身で判断する。",
-			shownRequest,
+			"Access TokenをAuthorizationヘッダに付けて、Resource Serverを呼ぶ。許可するかどうかは、RSがTokenの中身で判断する。",
+			traceRequest,
 			"HTTP " + res.status() + "\n" + http.pretty(http.parseAny(res.body()))));
 		store.calls().add(toCallResult(store.calls().size() + 1, api.method(), actualPath, shownRequest, res));
 		return true;

@@ -14,12 +14,12 @@
 		<p th:if="${latest.message() != null}" th:text="${latest.message()}"></p>
 		<table th:if="${latest.required() != null}">
 			<tr><th>このAPIに必要な条件</th><td><code th:text="${latest.required()}"></code></td></tr>
-			<tr><th>トークンが持つスコープ</th><td><span class="tag" th:each="s : ${latest.grantedScopes()}" th:text="${s}"></span></td></tr>
-			<tr><th>トークンが持つロール</th><td><span class="tag role" th:each="r : ${latest.grantedRoles()}" th:text="${r}"></span></td></tr>
+			<tr><th>Tokenが持つスコープ</th><td><span class="tag" th:each="s : ${latest.grantedScopes()}" th:text="${s}"></span></td></tr>
+			<tr><th>Tokenが持つロール</th><td><span class="tag role" th:each="r : ${latest.grantedRoles()}" th:text="${r}"></span></td></tr>
 		</table>
 		<details open>
 			<summary th:text="${'APIを呼ぶ: ' + latest.method() + ' ' + latest.path() + '  →  ' + latest.status()}"></summary>
-			<p class="note">アクセストークンをAuthorizationヘッダに付けて、Resource Serverを呼ぶ。許可するかどうかは、RSがトークンの中身で判断する。</p>
+			<p class="note">Access TokenをAuthorizationヘッダに付けて、Resource Serverを呼ぶ。許可するかどうかは、RSがTokenの中身で判断する。</p>
 			<b>リクエスト</b>
 			<pre th:text="${latest.request()}"></pre>
 			<b>レスポンス</b>
@@ -48,10 +48,10 @@
 	<details th:each="s : ${steps}">
 		<summary th:text="${s.title()}"></summary>
 		<p class="note" th:text="${s.note()}"></p>
-		<b>リクエスト</b>
+		<b th:text="${s.requestLabel() ?: 'リクエスト'}">リクエスト</b>
 		<pre th:text="${s.request()}"></pre>
 		<p class="note" th:if="${s.screen() != null}" th:text="${'⇒ ' + s.screen()}"></p>
-		<b>レスポンス</b>
+		<b th:text="${s.responseLabel() ?: 'レスポンス'}">レスポンス</b>
 		<pre th:text="${s.response()}"></pre>
 	</details>
 </div>

@@ -81,7 +81,8 @@ public class AuthorizationService {
 
 		store.steps().add(new Step(
 			"1. 認可リクエスト(ブラウザ → Keycloak)",
-			"RPはブラウザをKeycloakのログイン画面へ移動させる。どのアプリが(client_id)、何を許してほしいか(scope)を伝える。",
+			"RPはブラウザをKeycloakのログイン画面へ移動させ、どのアプリが(client_id)、何を許してほしいか(scope)を伝える。"
+				+ "PKCE用に、秘密の値(code_verifier)のハッシュ値(code_challenge)と、そのハッシュ方式(code_challenge_method)を先に渡す。",
 			"GET " + authEndpoint + "\n" + lines(params),
 			"(この応答はブラウザとKeycloakの間でやり取りされるため、RPには見えない。結果は、ブラウザがRPに戻ってきたときに分かる)"));
 		return Optional.of(url.build().encode().toUri());
@@ -101,7 +102,7 @@ public class AuthorizationService {
 		steps.set(0, new Step(first.title(), first.note(), first.request(), screen, response));
 	}
 
-	// ---- 2. Keycloakから戻る → 3. トークン交換 → 4. IDトークンの検証 -----------------------------
+	// ---- 2. Keycloakから戻る → 3. Token交換 → 4. ID Tokenの検証 -----------------------------
 
 	// 結果は、成功ならstoreのトークン、失敗ならstoreのloginErrorかトレースに残る
 	public void handleCallback(String code, String state, String error, String errorDescription, SessionStore store) {
@@ -109,7 +110,7 @@ public class AuthorizationService {
 		String redirectUri = props.redirectUri();
 
 		Map<String, String> returned = new LinkedHashMap<>();
-		if (code != null) returned.put("code", Tokens.abbreviate(code));
+		if (code != null) returned.put("code", code);
 		if (state != null) returned.put("state", state);
 		if (error != null) returned.put("error", error);
 		if (errorDescription != null) returned.put("error_description", errorDescription);
@@ -120,7 +121,8 @@ public class AuthorizationService {
 				? "Keycloakが返したエラー(上の1の応答の302)に従って、ブラウザがRPに戻ってきた。codeは付かず、エラーの内容だけが付いている。"
 				: "ログインと同意が済むと、認可コード(code)を付けてRPに戻ってくる。codeはまだ「引換券」で、APIは呼べない。",
 			"GET " + redirectUri + "\n" + lines(returned),
-			error != null ? "(エラーのため、トークンには交換しない)" : "(RPはこのcodeをトークンに交換する)"));
+			error != null ? "エラーのため、3(Tokenへの交換)と4(ID Tokenの検証)は行わない" : "RPは、3でcodeをTokenに交換し、4でID Tokenを検証する",
+			error != null ? "(エラーの内容を表示した、アプリ画面を返す)" : "(3と4の結果を反映した、アプリ画面を返す)"));
 
 		if (error != null) {
 			// 失敗の理由を画面の上部に表示する。それまでのログイン(トークン)は、そのまま残る
@@ -148,17 +150,13 @@ public class AuthorizationService {
 		Response res = http.postForm(tokenEndpoint, form);
 
 		Map<String, String> shownForm = new LinkedHashMap<>();
-		form.forEach((k, v) -> shownForm.put(k, switch (k) {
-			case "client_secret" -> "******(表示用に隠している)";
-			case "code" -> Tokens.abbreviate(v.get(0));
-			default -> v.get(0);
-		}));
+		form.forEach((k, v) -> shownForm.put(k, "client_secret".equals(k) ? "******(表示用に隠している)" : v.get(0)));
 		Map<String, Object> body = http.parseMap(res.body());
 		steps.add(new Step(
-			"3. codeをトークンに交換(RP → Keycloak)",
-			"ブラウザを通らない直接の通信(バックチャネル)。client_secretとcode_verifier(PKCE)で、RP本人であることを示す。",
+			"3. codeをTokenに交換(RP → Keycloak)",
+			"ブラウザを通らない直接の通信(バックチャネル)。client_secretでRP本人であることと、「1. 認可リクエスト」のcode_challengeの答え合わせ(PKCE)のためにcode_verifierを送り、codeからAPIを呼ぶためのTokenへ交換する。",
 			"POST " + tokenEndpoint + "\n" + lines(shownForm),
-			"HTTP " + res.status() + "\n" + http.pretty(abbreviateTokens(body))));
+			"HTTP " + res.status() + "\n" + http.pretty(body)));
 		if (res.status() != 200) {
 			return;
 		}
@@ -171,11 +169,13 @@ public class AuthorizationService {
 		List<String> checks = new ArrayList<>();
 		boolean ok = checkIdToken(idClaims, clientId, store.nonce(), checks);
 		steps.add(new Step(
-			"4. IDトークンの検証(RP)",
-			"IDトークンは「誰がログインしたか」を表す。発行者・宛先・nonce・期限を確認する。"
-				+ "(トークンエンドポイントから直接受け取ったため、署名の検証は省略している)",
+			"4. ID Tokenの検証(RP内部の処理)",
+			"通信ではなく、RPの中で行う処理。ID Tokenは「誰がログインしたか」を表す。発行者・宛先・nonce・期限を確認する。"
+				+ "(Token Endpointから直接受け取ったため、署名の検証は省略している)",
 			String.join("\n", checks),
-			ok ? "OK: ログインを受け付ける" : "NG: ログインを受け付けない"));
+			null,
+			ok ? "OK: ログインを受け付ける" : "NG: ログインを受け付けない",
+			"検証項目", "判定"));
 		if (ok) {
 			store.saveTokens(accessToken, idToken, accessClaims, idClaims);
 		}
@@ -208,16 +208,6 @@ public class AuthorizationService {
 	}
 
 	// ---- 補助 -----------------------------------------------------------------------------
-
-	private static Map<String, Object> abbreviateTokens(Map<String, Object> body) {
-		Map<String, Object> shown = new LinkedHashMap<>(body);
-		for (String key : List.of("access_token", "refresh_token", "id_token")) {
-			if (shown.get(key) instanceof String token) {
-				shown.put(key, Tokens.abbreviate(token));
-			}
-		}
-		return shown;
-	}
 
 	private static String lines(Map<String, String> params) {
 		StringBuilder sb = new StringBuilder();

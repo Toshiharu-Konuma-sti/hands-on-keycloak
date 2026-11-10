@@ -24,6 +24,6 @@ run_assign_realm_role_to_group \
 run_assign_realm_role_to_group \
 	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-manager-grp" "my-manager-role"
 run_assign_realm_role_to_group \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-admin-grp" "my-admin-role"
+	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_ROL" "my-admin-grp" "my-director-role"
 
 call_show_finish_banner

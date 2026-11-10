@@ -16,7 +16,7 @@ echo "\n### START: Create realm rols ##########"
 # 一般社員 < 課長 < 部長 の3段階
 call_create_realm_role $KC_URL $AC_TOKEN $MY_REALM "my-staff-role"
 call_create_realm_role $KC_URL $AC_TOKEN $MY_REALM "my-manager-role"
-call_create_realm_role $KC_URL $AC_TOKEN $MY_REALM "my-admin-role"
+call_create_realm_role $KC_URL $AC_TOKEN $MY_REALM "my-director-role"
 
 echo "\n### START: Get realm roles ##########"
 JSON_ROL=$(call_get_realm_roles $KC_URL $AC_TOKEN $MY_REALM)
@@ -24,6 +24,6 @@ JSON_ROL=$(call_get_realm_roles $KC_URL $AC_TOKEN $MY_REALM)
 # 上位のロールが下位のロールを含む(複合ロール)。部長のトークンには、課長と一般社員のロールも入る
 echo "\n### START: Include a lower role in a higher role (composite role) ##########"
 run_assign_composite_role $KC_URL $AC_TOKEN $MY_REALM "$JSON_ROL" "my-manager-role" "my-staff-role"
-run_assign_composite_role $KC_URL $AC_TOKEN $MY_REALM "$JSON_ROL" "my-admin-role" "my-manager-role"
+run_assign_composite_role $KC_URL $AC_TOKEN $MY_REALM "$JSON_ROL" "my-director-role" "my-manager-role"
 
 call_show_finish_banner

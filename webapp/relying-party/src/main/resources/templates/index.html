@@ -120,7 +120,7 @@
 </ul>
 
 <details class="help" th:open="${!loggedIn}">
-	<summary>ログインの補足（コープとユーザー）</summary>
+	<summary>ログインの補足（スコープとユーザー＋ロール）</summary>
 	<p class="note tight">スコープ：</p>
 	<ul class="note">
 		<li><code>expenses:read</code> は default scope のため、追加要求しなくても常に付与</li>
@@ -133,7 +133,7 @@
 		<tr><th>ユーザー</th><th>役職</th><th>付与されるロール(上位のロールは下位を含む)</th></tr>
 		<tr><td>staff.sios</td><td>一般社員</td><td><span class="tag role">my-staff-role</span></td></tr>
 		<tr><td>taro.sios</td><td>課長</td><td><span class="tag role">my-manager-role</span> + 一般社員のロール(<span class="tag role">my-staff-role</span>)</td></tr>
-		<tr><td>admin.sios</td><td>部長</td><td><span class="tag role">my-admin-role</span> + 課長と一般社員のロール(<span class="tag role">my-manager-role</span>, <span class="tag role">my-staff-role</span>)</td></tr>
+		<tr><td>admin.sios</td><td>部長</td><td><span class="tag role">my-director-role</span> + 課長と一般社員のロール(<span class="tag role">my-manager-role</span>, <span class="tag role">my-staff-role</span>)</td></tr>
 	</table>
 </details>
 
@@ -148,18 +148,18 @@
 		<tr><th>ロール</th><th><code>realm_access.roles</code></th><td><span class="tag role" th:each="r : ${roles}" th:text="${r}"></span></td></tr>
 	</table>
 	<details>
-		<summary>アクセストークンのクレーム(RSに渡すトークン)</summary>
+		<summary>Access Token のペイロード</summary>
 		<pre th:text="${accessJson}"></pre>
 	</details>
 	<details>
-		<summary>IDトークンのクレーム(誰がログインしたかを表す)</summary>
+		<summary>ID Token のペイロード</summary>
 		<pre th:text="${idJson}"></pre>
 	</details>
 </section>
 
 <section id="api" th:if="${loggedIn}">
 	<h2>2. APIを呼ぶ</h2>
-	<p class="note flush">セッションのアクセストークンが持つ権限：</p>
+	<p class="note flush">セッションの Access Token が持つ権限：</p>
 	<ul class="token-summary">
 		<li>スコープ: <span class="tag" th:each="s : ${scopes}" th:text="${s}"></span></li>
 		<li>ロール: <span class="tag role" th:each="r : ${roles}" th:text="${r}"></span></li>

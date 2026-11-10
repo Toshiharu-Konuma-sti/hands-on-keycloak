@@ -57,7 +57,7 @@ public final class Tokens {
 		}
 	}
 
-	// 長いトークンを、トレース表示用に短くする
+	// 長いトークンを、APIの結果欄の表示用に短くする
 	public static String abbreviate(String token) {
 		return token.length() <= 24 ? token : token.substring(0, 24) + "...(" + token.length() + "文字)";
 	}
