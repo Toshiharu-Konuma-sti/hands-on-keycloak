@@ -110,3 +110,10 @@ body[data-app="app-expense-approval"] { background: #fffdf0; --band-start: #b84a
 /* 注釈の下余白 */
 .note.tight { margin-bottom: .3em; }
 .note.flush { margin-bottom: 0; }
+
+/* 矢印の上の「Access Token」ラベル。線と同じ色で、アクティブなときは塗りつぶす */
+.flow-banner .token rect { fill: #fff; stroke: #4a4f55; stroke-width: 1.5; }
+.flow-banner .token text { fill: #4a4f55; font-size: 10px; font-weight: bold; }
+.flow-banner svg[data-active="app-expense-claim"] .token rect { fill: #2f8f5b; stroke: #2f8f5b; }
+.flow-banner svg[data-active="app-expense-approval"] .token rect { fill: #b84a00; stroke: #b84a00; }
+.flow-banner svg[data-active="app-expense-claim"] .token text, .flow-banner svg[data-active="app-expense-approval"] .token text { fill: #fff; }

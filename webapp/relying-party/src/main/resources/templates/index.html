@@ -26,7 +26,7 @@
 		<b th:if="${currentApp != null}" th:text="${currentApp.label()}"></b>
 		<b class="prompt" th:unless="${currentApp != null}">アプリを選んでログイン</b>
 	</p>
-	<details th:open="${!loggedIn or loginError != null}">
+	<details open>
 		<summary th:text="${loggedIn ? 'アプリを切替えてログイン' : 'アプリを選ぶ'}">アプリを選ぶ</summary>
 		<form method="post" th:action="@{/login}">
 			<div class="app-select">
@@ -62,7 +62,7 @@
 <main class="content">
 <!-- IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れ。アクティブなアプリの経路を強調する -->
 <div class="flow-banner">
-<svg viewBox="0 0 900 96" role="img" aria-label="IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れを体験する。"
+<svg viewBox="0 0 900 96" role="img" aria-label="IdP(Keycloak) → RP(この画面) → RS(Resource Server) の流れ。矢印はAccess Tokenの流れを表す。"
 	th:attr="data-active=${currentApp != null ? currentApp.id() : ''}">
 	<defs>
 		<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto">
@@ -71,36 +71,44 @@
 	</defs>
 
 	<g class="node idp">
-		<rect x="10" y="20" width="170" height="56" rx="8"/>
-		<text x="95" y="43" class="name">IdP：Keycloak</text>
-		<text x="95" y="62" class="sub">ID Provider</text>
+		<rect x="10" y="20" width="140" height="56" rx="8"/>
+		<text x="80" y="43" class="name">IdP：Keycloak</text>
+		<text x="80" y="62" class="sub">ID Provider</text>
 	</g>
 
 	<g class="trunk">
-		<path d="M180,48 H235"/>
-		<path d="M665,48 H710" marker-end="url(#arrow)"/>
+		<path d="M150,48 H260"/>
+		<path d="M650,48 H760" marker-end="url(#arrow)"/>
+		<g class="token">
+			<rect x="163" y="40" width="84" height="16" rx="8"/>
+			<text x="205" y="52">Access Token</text>
+		</g>
+		<g class="token">
+			<rect x="663" y="40" width="84" height="16" rx="8"/>
+			<text x="705" y="52">Access Token</text>
+		</g>
 	</g>
 
 	<g class="branch claim" th:classappend="${currentApp == null ? '' : (currentApp.id() == 'app-expense-claim' ? 'active' : 'inactive')}">
-		<path class="line" d="M235,48 V24 H280" marker-end="url(#arrow)"/>
-		<path class="line" d="M620,24 H665 V48"/>
-		<rect class="box" x="280" y="4" width="340" height="40" rx="8"/>
-		<text x="450" y="29" class="name">RP：申請アプリ <tspan class="sub">(app-expense-claim)</tspan></text>
-		<text x="610" y="17" class="badge">ACTIVE</text>
+		<path class="line" d="M260,48 V24 H310" marker-end="url(#arrow)"/>
+		<path class="line" d="M600,24 H650 V48"/>
+		<rect class="box" x="310" y="4" width="290" height="40" rx="8"/>
+		<text x="455" y="29" class="name">RP：申請アプリ <tspan class="sub">(app-expense-claim)</tspan></text>
+		<text x="590" y="17" class="badge">ACTIVE</text>
 	</g>
 
 	<g class="branch approval" th:classappend="${currentApp == null ? '' : (currentApp.id() == 'app-expense-approval' ? 'active' : 'inactive')}">
-		<path class="line" d="M235,48 V72 H280" marker-end="url(#arrow)"/>
-		<path class="line" d="M620,72 H665 V48"/>
-		<rect class="box" x="280" y="52" width="340" height="40" rx="8"/>
-		<text x="450" y="77" class="name">RP：承認アプリ <tspan class="sub">(app-expense-approval)</tspan></text>
-		<text x="610" y="65" class="badge">ACTIVE</text>
+		<path class="line" d="M260,48 V72 H310" marker-end="url(#arrow)"/>
+		<path class="line" d="M600,72 H650 V48"/>
+		<rect class="box" x="310" y="52" width="290" height="40" rx="8"/>
+		<text x="455" y="77" class="name">RP：承認アプリ <tspan class="sub">(app-expense-approval)</tspan></text>
+		<text x="590" y="65" class="badge">ACTIVE</text>
 	</g>
 
 	<g class="node rs">
-		<rect x="710" y="20" width="180" height="56" rx="8"/>
-		<text x="800" y="43" class="name">RS：Web API</text>
-		<text x="800" y="62" class="sub">Resource Server</text>
+		<rect x="760" y="20" width="130" height="56" rx="8"/>
+		<text x="825" y="43" class="name">RS：Web API</text>
+		<text x="825" y="62" class="sub">Resource Server</text>
 	</g>
 </svg>
 </div>
