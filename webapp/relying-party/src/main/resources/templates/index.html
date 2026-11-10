@@ -24,16 +24,16 @@
 	<p class="side-title" th:text="${loggedIn ? 'ログイン中' : 'ログイン'}">ログイン</p>
 	<p class="status">
 		<b th:if="${currentApp != null}" th:text="${currentApp.label()}"></b>
-		<b class="prompt" th:unless="${currentApp != null}">アプリを選択してログインしてください</b>
+		<b class="prompt" th:unless="${currentApp != null}">アプリを選んでログイン</b>
 	</p>
 	<details th:open="${!loggedIn or loginError != null}">
-		<summary th:text="${loggedIn ? 'アプリを切り替えてログイン' : 'アプリを選ぶ'}">アプリを選ぶ</summary>
+		<summary th:text="${loggedIn ? 'アプリを切替えてログイン' : 'アプリを選ぶ'}">アプリを選ぶ</summary>
 		<form method="post" th:action="@{/login}">
 			<div class="app-select">
 				<p>
 					<span class="note">アプリ(client_id)</span>
 					<label th:each="c, it : ${clients}">
-						<input type="radio" name="client" required th:value="${c.id()}" th:checked="${c.id() == selectedClient}"> <span th:text="${c.label() + ' (' + c.id() + ')'}"></span>
+						<input type="radio" name="client" required th:value="${c.id()}" th:checked="${c.id() == selectedClient}"> <span class="client-name"><span th:text="${c.label()}"></span> <span class="client-id" th:text="'(' + ${c.id()} + ')'"></span></span>
 					</label>
 				</p>
 			</div>
@@ -71,9 +71,9 @@
 	</defs>
 
 	<g class="node idp">
-		<rect x="10" y="26" width="170" height="44" rx="8"/>
-		<text x="95" y="45" class="name">IdP</text>
-		<text x="95" y="61" class="sub">Keycloak</text>
+		<rect x="10" y="20" width="170" height="56" rx="8"/>
+		<text x="95" y="43" class="name">IdP：Keycloak</text>
+		<text x="95" y="62" class="sub">ID Provider</text>
 	</g>
 
 	<g class="trunk">
@@ -85,7 +85,7 @@
 		<path class="line" d="M235,48 V24 H280" marker-end="url(#arrow)"/>
 		<path class="line" d="M620,24 H665 V48"/>
 		<rect class="box" x="280" y="4" width="340" height="40" rx="8"/>
-		<text x="450" y="29" class="name">RP：申請アプリ <tspan class="sub">app-expense-claim</tspan></text>
+		<text x="450" y="29" class="name">RP：申請アプリ <tspan class="sub">(app-expense-claim)</tspan></text>
 		<text x="610" y="17" class="badge">ACTIVE</text>
 	</g>
 
@@ -93,37 +93,34 @@
 		<path class="line" d="M235,48 V72 H280" marker-end="url(#arrow)"/>
 		<path class="line" d="M620,72 H665 V48"/>
 		<rect class="box" x="280" y="52" width="340" height="40" rx="8"/>
-		<text x="450" y="77" class="name">RP：承認アプリ <tspan class="sub">app-expense-approval</tspan></text>
+		<text x="450" y="77" class="name">RP：承認アプリ <tspan class="sub">(app-expense-approval)</tspan></text>
 		<text x="610" y="65" class="badge">ACTIVE</text>
 	</g>
 
 	<g class="node rs">
-		<rect x="710" y="12" width="180" height="72" rx="8"/>
-		<text x="800" y="35" class="name">RS</text>
-		<text x="800" y="54" class="sub">Resource Server</text>
-		<text x="800" y="71" class="sub">Web API</text>
+		<rect x="710" y="20" width="180" height="56" rx="8"/>
+		<text x="800" y="43" class="name">RS：Web API</text>
+		<text x="800" y="62" class="sub">Resource Server</text>
 	</g>
 </svg>
 </div>
 <ul class="note">
-	<li><b>目的</b>: <b>スコープ</b>(アプリ(RP)に許した操作)と、<b>ロール</b>(ユーザーに与えられた役割)が、APIの許可・拒否にどう関わるかを体験して学ぶ。</li>
-	<li><b>題材</b>: 「経費精算」。経費のデータは動作確認用のサンプルで、実際の経費管理はしない。</li>
-	<li><b>操作</b>: アプリ(経費申請アプリ / 経費承認アプリ)と、ユーザー(一般社員 staff.sios / 課長 taro.sios / 部長 admin.sios)を切り替えて、APIを呼ぶ。</li>
-	<li><b>見るところ</b>: APIが許可(200)されるか、拒否(403)されるか。拒否の理由は、スコープ不足か、ロール不足か。</li>
+	<li><b>目的</b>：<b>スコープ</b>（RP（アプリ）に許した操作）と、<b>ロール</b>（ユーザーに与えられた役割）が、RS（Web API）の実行結果にどう関わるかを体験する</li>
+	<li><b>題材</b>：「経費精算」（※ データは動作確認用のダミーであり、実際の業務管理は行わない）</li>
+	<li><b>操作</b>：アプリ（経費申請アプリ／経費承認アプリ）と、ユーザー（一般社員／課長／部長）を切り替えて、APIの実行結果を確認する</li>
+	<li><b>見るところ</b>：APIはスコープとロールを用いて実行許可を判断するため、成否（200 / 403）と拒否理由の実行結果を確認する</li>
 </ul>
-<p class="note">
-	APIは、スコープとロールの両方を見て実行を許可するか決める。
-</p>
 
 <details class="help" th:open="${!loggedIn}">
-	<summary>ログインの補足(スコープとユーザー)</summary>
+	<summary>ログインの補足（コープとユーザー）</summary>
+	<p class="note tight">スコープ：</p>
 	<ul class="note">
 		<li><code>expenses:read</code> は default scope のため、追加要求しなくても常に付与</li>
 		<li><code>expenses:write</code> / <code>expenses:approve</code> は optional scope のため、追加要求したときだけ付与</li>
 		<li>Keycloakのアプリ設定では、経費申請アプリへ <code>expenses:read</code>, <code>expenses:write</code> を、経費承認アプリへ <code>expenses:read</code>, <code>expenses:approve</code> を割り当て</li>
 		<li>アプリに割り当てていないスコープを要求すると、Keycloakがエラー(<code>invalid_scope</code>)で拒否</li>
 	</ul>
-	<p class="note" style="margin-bottom:.3em">ログインするユーザー(パスワードはユーザー名と同じ)と、付与されるロール:</p>
+	<p class="note tight">ログインするユーザー（パスワードはユーザー名と同じ）と、付与されるロール：</p>
 	<table class="note compact">
 		<tr><th>ユーザー</th><th>役職</th><th>付与されるロール(上位のロールは下位を含む)</th></tr>
 		<tr><td>staff.sios</td><td>一般社員</td><td><span class="tag role">my-staff-role</span></td></tr>
@@ -154,7 +151,7 @@
 
 <section id="api" th:if="${loggedIn}">
 	<h2>2. APIを呼ぶ</h2>
-	<p class="note" style="margin-bottom:0">いまのトークンが持つもの:</p>
+	<p class="note flush">セッションのアクセストークンが持つ権限：</p>
 	<ul class="token-summary">
 		<li>スコープ: <span class="tag" th:each="s : ${scopes}" th:text="${s}"></span></li>
 		<li>ロール: <span class="tag role" th:each="r : ${roles}" th:text="${r}"></span></li>
@@ -175,7 +172,7 @@
 	<div th:replace="~{fragments :: apiResult}"></div>
 </section>
 
-<section id="trace-section">
+<section id="trace-section" th:if="${loggedIn or !steps.isEmpty()}">
 	<h2>通信のトレース</h2>
 	<div th:replace="~{fragments :: trace}"></div>
 </section>

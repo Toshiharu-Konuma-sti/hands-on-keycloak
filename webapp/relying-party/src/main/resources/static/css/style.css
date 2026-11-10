@@ -101,3 +101,12 @@ body[data-app="app-expense-approval"] { background: #fffdf0; --band-start: #b84a
 .flow-banner svg[data-active="app-expense-claim"] .trunk path { stroke: #2f8f5b; stroke-width: 4; }
 .flow-banner svg[data-active="app-expense-approval"] .trunk path { stroke: #b84a00; stroke-width: 4; }
 .flow-banner .branch.active .line { stroke-linecap: round; }
+
+/* 左ペインのアプリ選択: ラジオの横に「名前」、折り返すときは「(client_id)」を丸ごと次の行へ */
+.sidebar .app-select label { display: flex; align-items: flex-start; gap: .3em; }
+.sidebar .app-select label input { flex: none; margin-top: .35em; }
+.sidebar .client-id { display: inline-block; white-space: nowrap; font-size: .85em; color: #555; }
+
+/* 注釈の下余白 */
+.note.tight { margin-bottom: .3em; }
+.note.flush { margin-bottom: 0; }
