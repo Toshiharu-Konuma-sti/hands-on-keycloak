@@ -24,6 +24,6 @@ run_assign_user_to_group \
 run_assign_user_to_group \
 	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-manager-grp" "taro.sios"
 run_assign_user_to_group \
-	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-admin-grp" "admin.sios"
+	$KC_URL $AC_TOKEN $MY_REALM "$JSON_GRP" "$JSON_USR" "my-director-grp" "boss.sios"
 
 call_show_finish_banner

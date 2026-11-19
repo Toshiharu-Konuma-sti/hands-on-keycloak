@@ -6,18 +6,20 @@
 - [Keycloak の演習](#keycloak-の演習)
     - [前提(事前準備)](#前提事前準備)
     - [SAMLとOIDCの使い分け](#samlとoidcの使い分け)
+        - [SAMLでのスコープ・ロールによる制御](#samlでのスコープロールによる制御)
     - [NextcloudでSAML連携](#nextcloudでsaml連携)
         - [1. KeycloakにSAMLクライアントを作成する](#1-keycloakにsamlクライアントを作成する)
         - [2. NextcloudにSAMLの設定をする](#2-nextcloudにsamlの設定をする)
         - [3. 動作確認](#3-動作確認)
-        - [4. (発展)確認ポイント](#4-発展確認ポイント)
+        - [4. (発展)ロールマッピングで部長だけ管理設定を使えるようにする](#4-発展ロールマッピングで部長だけ管理設定を使えるようにする)
+        - [5. (発展)確認ポイント](#5-発展確認ポイント)
         - [トラブルシュート](#トラブルシュート)
     - [GrafanaでOIDC連携](#grafanaでoidc連携)
         - [1. KeycloakにOIDCクライアントを作成する](#1-keycloakにoidcクライアントを作成する)
         - [2. GrafanaにOIDCの設定をする](#2-grafanaにoidcの設定をする)
         - [3. 動作確認](#3-動作確認-1)
         - [4. KeycloakのロールをGrafanaのロールにマッピングする](#4-keycloakのロールをgrafanaのロールにマッピングする)
-        - [5. (発展)確認ポイント](#5-発展確認ポイント)
+        - [5. (発展)確認ポイント](#5-発展確認ポイント-1)
         - [トラブルシュート](#トラブルシュート-1)
     - [独自実装した RP と RS で IdP 連携確認](#独自実装した-rp-と-rs-で-idp-連携確認)
         - [前提](#前提)
@@ -35,7 +37,7 @@
         - [2. KeycloakにGoogleを登録する](#2-keycloakにgoogleを登録する)
         - [3. 動作確認](#3-動作確認-2)
         - [4. (発展)連携したユーザにロールを付ける](#4-発展連携したユーザにロールを付ける)
-        - [5. (発展)確認ポイント](#5-発展確認ポイント-1)
+        - [5. (発展)確認ポイント](#5-発展確認ポイント-2)
         - [トラブルシュート](#トラブルシュート-3)
 
 
@@ -61,7 +63,7 @@
     |-------------|-------------|--------|-----------------------------------------------------------------|
     | staff.sios  | staff.sios  | 一般社員 | my-staff-role                                                   |
     | taro.sios   | taro.sios   | 課長   | my-manager-role (my-staff-roleを含む)                           |
-    | admin.sios  | admin.sios  | 部長   | my-director-role (my-manager-roleとmy-staff-roleを含む)             |
+    | boss.sios   | boss.sios   | 部長   | my-director-role (my-manager-roleとmy-staff-roleを含む)             |
 
     上位のロールは下位のロールを含む(複合ロール)。トークンには、含まれるロールもすべて展開されて入る。
 
@@ -80,6 +82,8 @@
 | 設定の手間           | 多い(メタデータ、証明書、属性のマッピング) | 少ない(クライアントID・シークレット・リダイレクトURI) |
 | スマホアプリ・SPA    | 不向き(ブラウザのリダイレクトが前提)       | 向いている(PKCE)                                 |
 | APIの保護(認可)    | 想定していない(認証が目的)                 | アクセストークンで、標準的に扱える                 |
+| 連携先に渡す情報の制御 | IdP側のマッパーで出力する属性(Attribute)を固定する。スコープのような動的な要求は無い | スコープ/クレームで、クライアントが要求・制御できる |
+| ロール・グループの連携 | 属性として渡す(`Role list`/`Group list`マッパー)。解釈と権限への反映はアプリ(SP)次第 | クレームとして渡す(`realm_access.roles`等)。解釈はアプリ(RP/RS)次第 |
 | 対応しているアプリ   | 古い企業向け製品、一部のSaaSに多い           | 新しい製品、クラウドネイティブなアプリに多い       |
 
 選び方の目安:
@@ -92,6 +96,25 @@
 Keycloakは、1つのレルムにSAMLとOIDCのクライアントを混在させられる。
 ユーザ・グループ・ロールは共通で管理できるため、アプリごとに、対応するプロトコルを選べる。
 
+#### SAMLでのスコープ・ロールによる制御
+
+OIDCのスコープやロールに相当することは、SAMLでも、属性(Attribute)として実現できる。ただし、考え方が異なる。
+
+| OIDC                           | SAML                                                           |
+|--------------------------------|----------------------------------------------------------------|
+| クレーム                       | Attribute(Assertionの`AttributeStatement`)                     |
+| ロール(`realm_access.roles`等) | Attributeとして出力する(Keycloakの`Role list`マッパー)         |
+| グループ                       | Attributeとして出力する(Keycloakの`Group list`マッパー)        |
+| スコープ(`scope=profile email`) | 概念が無い                                                     |
+| アクセストークンによるAPI認可  | 想定外(ブラウザのSSOが対象)                                    |
+
+- スコープが無いため、連携先が「何を受け取るか」を要求することはできない。IdP側で、クライアントごとに出力する属性をマッパーで固定する。
+  KeycloakではSAMLクライアントにもClient scopesがあり、属性の出力セットとして使えるが、リクエストごとに変えることはできない。
+- IdPの役割は、ロールやグループを属性として渡すところまで。渡された属性を権限にどう反映するかは、連携先(SP)の機能による。
+  Nextcloudでは、`user_saml`の[属性マッピング]にある「グループにマップする属性」で、SAML属性をNextcloudのグループに対応づけられる。(「NextcloudでSAML連携」の手順4で、実際に設定する)
+- ログイン自体をIdP側で制限することもできる(特定のロールを持つユーザだけに許可する等)が、OIDCほど手軽ではない。実務では「属性を渡し、SP側で制御する」形が主流。
+- 手順1-8で外した`role_list`は、ロールごとに同名の`Role`属性を複数出力する標準の仕組み。Nextcloudではエラーになるため、ロールを渡したい場合は、`Group list`マッパー等で別名(例: `groups`)の属性にする。
+
 
 ### NextcloudでSAML連携
 
@@ -103,8 +126,8 @@ Nextcloudはコンテナ初回起動時に自動インストールされ、`user
 1. http://localhost:8080/admin/ に`admin / password`でログインし、`handson`レルムを選択する。
 2. [Clients] > [Create client] を押し、以下を入力して[Next]。
     - Client type : SAML
-    - Client ID   : http://localhost:8081/apps/user_saml/saml/metadata
-      (NextcloudのSP Entity ID。Nextcloud側で未入力の場合の既定値で、完全一致させる必要がある)
+    - Client ID   : nextcloud
+      (NextcloudのSP Entity ID。手順2-6でNextcloud側にも同じ値を入力し、完全一致させる必要がある)
     - Name        : nextcloud
 3. 以下を入力して[Save]。
     - Root URL            : http://localhost:8081/
@@ -134,7 +157,7 @@ Nextcloudはコンテナ初回起動時に自動インストールされ、`user
 
 8. [Client scopes]タブで`role_list`を選択して[Remove]する。
    (`role_list`は既定で、ロールごとに同名(`Role`)のAttributeを複数出力する。
-    Nextcloudのsaml処理は同名のAttributeを許さずエラーになるため。ロールは今回使わない)
+    Nextcloudのsaml処理は同名のAttributeを許さずエラーになるため。ロールは、手順3までは使わない。手順4で、別のマッパーを使って渡す)
 
 #### 2. NextcloudにSAMLの設定をする
 
@@ -161,7 +184,7 @@ Nextcloudはコンテナ初回起動時に自動インストールされ、`user
         - UIDをマップする属性              : username
           (「属性マッピング」ではなく、[一般]にある。必須項目)
     - [Service Providerデータ]
-        - サービスプロバイダエンティティID(オプション) : 空欄のまま(既定で手順1-2のClient IDと同じ値になる)
+        - サービスプロバイダエンティティID(オプション) : nextcloud (手順1-2のClient IDと同じ値。空欄のままだと既定値のURLになり、Keycloakと一致しなくなる)
     - [Identity Providerデータ]
         - IdPエンティティの識別子(URIでなければならない) : http://localhost:8080/realms/handson
         - SPが認証要求メッセージを送信するIdPのURLターゲット
@@ -172,7 +195,7 @@ Nextcloudはコンテナ初回起動時に自動インストールされ、`user
     - [属性マッピング]
         - 表示名をにマップする属性         : displayName
         - 電子メールアドレスをマップする属性 : email
-        - (クォータ/ホーム/グループ/MFA/LDAP/グループマッピング接頭辞は空欄のまま)
+        - (クォータ/ホーム/グループ/MFA/LDAP/グループマッピング接頭辞は空欄のまま。グループは手順4で設定する)
     - [セキュリティ設定]は既定のままにする。
 7. [変更を保存]を押す。
 8. 設定画面に`有効なメタデータ`と表示されることを確認する。(`メタデータが無効です`の場合は入力値を見直す)
@@ -183,14 +206,92 @@ Nextcloudはコンテナ初回起動時に自動インストールされ、`user
 
 1. Nextcloudからログアウトし(またはシークレットウィンドウで) http://localhost:8081/ を開く。
 2. ログイン画面の[SSO & SAML log in]を押す。
-3. Keycloakのログイン画面に遷移することを確認し、`admin.sios / admin.sios`でログインする。（ログインするユーザーの初回アクセス時には、NextCloud側の準備があるためリダイレクト時間が少々掛かる）
-4. Nextcloudにログインでき、右上のユーザが`admin.sios`になっていることを確認する。
-5. ローカル管理者でログインし直し、[ユーザ]一覧に`admin.sios`が自動作成されていることを確認する。
+3. Keycloakのログイン画面に遷移することを確認し、`boss.sios / boss.sios`でログインする。（ログインするユーザーの初回アクセス時には、NextCloud側の準備があるためリダイレクト時間が少々掛かる）
+4. Nextcloudにログインでき、右上のユーザが`boss.sios`になっていることを確認する。
+5. ローカル管理者でログインし直し、[ユーザ]一覧に`boss.sios`が自動作成されていることを確認する。
 6. 他のユーザ(`staff.sios`、`taro.sios`)でも同様にログインできることを確認する。
 7. Nextcloudの右上のアイコン > [ログアウト]を押し、Keycloakを経由してNextcloudのログイン画面に戻ることを確認する。
    (Keycloak管理画面 > Sessions で、該当ユーザのセッションが消えていることも確認する)
 
-#### 4. (発展)確認ポイント
+#### 4. (発展)ロールマッピングで部長だけ管理設定を使えるようにする
+
+`my-director-role`を持つユーザ(部長)だけに、Nextcloudの管理設定(一部)を使えるようにする。それ以外のユーザは一般ユーザのままにする。
+
+Nextcloudには、Grafanaの`Admin/Editor/Viewer`のような名前付きのロールは無い。代わりに、「グループ」に権限を与える。
+そのため、「Keycloakのロール → Nextcloudのグループ → 管理設定の委任」の形で連携する。
+
+- Keycloak(IdP): ユーザのロールをAttribute`groups`として出力する。
+- Nextcloud(SP): Attribute`groups`の値を、グループとしてユーザに所属させる。グループ名には、既定の接頭辞`SAML_`が付く。(`my-director-role`なら`SAML_my-director-role`)
+  このグループに、Nextcloudの[管理者権限]画面(管理設定の委任)で、管理設定の一部を許可する。
+
+(補足) Nextcloudの完全な管理者は、標準の`admin`グループの所属者だけで、SAMLのグループ(`SAML_`付き)とは別物になる。
+そのため、ここでは完全な管理者にはせず、委任で許可した管理設定だけを使えるようにする。
+
+##### 4-1. Keycloakでロールを出力する
+
+1. http://localhost:8080/admin/ で`handson`レルムを選択し、[Clients] > `nextcloud` > [Client scopes]タブ > `nextcloud-dedicated` > [Scope]タブを開く。
+2. `Full scope allowed`を Off にし、[Assign role]を押して、レルムロールの`my-director-role`を選んで[Assign]する。
+   (Nextcloudに渡すロールを絞る。Onのままだと、`default-roles-handson`や`offline_access`等の無関係なロールも、すべてNextcloudのグループになる。
+    `my-director-role`は複合ロールのため、含まれる`my-manager-role`と`my-staff-role`も対象になる)
+3. [Mappers]タブ > [Configure a new mapper](または[Add mapper] > [By configuration]) > `Role list` で、以下を入力して[Save]。
+    - Name                     : groups
+    - Role attribute name      : groups
+    - SAML Attribute NameFormat: Basic
+    - Single Role Attribute    : On (既定)
+   (手順1-8で外した`role_list`とは別に、専用のマッパーで出力する。Onにすると、複数のロールが1つのAttributeにまとめて出力される)
+
+##### 4-2. Nextcloudでグループにマップする
+
+1. Nextcloudにローカル管理者でログインし、[管理者設定] > [SSOとSAML認証] > `プロバイダー 1` の設定画面を開く。
+2. [属性マッピング]の`ユーザーグループをマップする属性`に`groups`を入力し、[変更を保存]を押す。
+   (`グループマッピング接頭辞`は空欄のまま。既定の`SAML_`が使われる)
+3. 設定画面に`有効なメタデータ`と表示されることを確認する。
+
+##### 4-3. グループの作成を確認する
+
+1. Nextcloudからログアウトし、`boss.sios / boss.sios`でログインし直す。(ロールは、ログインのたびにグループへ反映される)
+2. 同様に、`taro.sios`と`staff.sios`でもログインする。
+3. ローカル管理者でログインし直し、[ユーザー]一覧で、各ユーザのグループが以下になっていることを確認する。
+
+    | ユーザ     | 所属するグループ                                 |
+    |------------|--------------------------------------------------|
+    | boss.sios  | my-director-role、my-manager-role、my-staff-role |
+    | taro.sios  | my-manager-role、my-staff-role                   |
+    | staff.sios | my-staff-role                                    |
+
+    グループは、ログイン時にNextcloudで自動作成される。画面の表示名は`my-director-role`等だが、グループIDは`SAML_my-director-role`等になる。
+    コマンドでも確認できる。
+       $ docker exec -u www-data nextcloud php occ group:list
+       $ docker exec -u www-data nextcloud php occ user:info boss.sios
+
+##### 4-4. 部長のグループに管理設定を委任する
+
+1. ローカル管理者で、右上のアイコン > [管理者設定] > 左メニュー「管理」の[管理者権限]を開く。(UIが英語の場合は`Administration privileges`。http://localhost:8081/settings/admin/admindelegation でも開ける)
+   (「ここではどのグループが、どの管理設定項目にアクセスできるか決めることができます。」と表示される画面)
+2. 許可したい設定の項目の欄だけに、委任先のグループ`my-director-role`(ID: `SAML_my-director-role`)を選ぶ。ここでは、例として`共有 - Global`の1つだけにする。
+   (他の欄は空のままにする。全ての欄に入れると、`SSO & SAML authentication`(SAML設定)や`ログ`等も部長に開放されてしまう)
+   (グループは、手順4-3でログインしたときに作成されている。ここで選べない場合は、手順4-3の`boss.sios`のログインを確認する)
+   コマンドでも設定できる。
+       $ docker exec -u www-data nextcloud php occ admin-delegation:add 'OCA\Settings\Settings\Admin\Sharing' SAML_my-director-role
+       $ docker exec -u www-data nextcloud php occ admin-delegation:show
+
+##### 4-5. 動作確認
+
+1. `boss.sios`でログインし直し、右上のアイコンのメニューから[設定]を開く。
+   左メニューの「管理」に、手順4-4で許可した項目(`共有`)だけが表示され、開けることを確認する。
+   (完全な管理者と違い、メニューに[管理者設定]は出ない。委任された項目は、[設定]画面の左メニューに現れる)
+   (直接 http://localhost:8081/settings/admin/sharing を開いても確認できる)
+2. `taro.sios`と`staff.sios`でログインし、左メニューに「管理」の項目が表示されない(一般ユーザ)ことを確認する。
+
+##### 4-6. 注意点
+
+- 委任は、`admin`グループの管理者(`admin / password`)の権限とは別物。委任できるのは、Nextcloudが委任に対応している設定(`admin-delegation:show`で一覧できる)だけで、アプリの管理などは委任できない。
+  (部長に`admin`グループの完全な管理者権限を与えるには、グループ名に接頭辞が付かないように、`グループマッピング接頭辞`を空にして保存する必要がある。
+  ただし、設定画面は変更のあった項目だけを送信するため、未設定から空への変更は画面の1回の保存ではできず、接頭辞を一度保存してから空に戻す2回の保存が必要になる。そのため、この手順では扱わない)
+- `my-manager-role`等のグループは、ロールを外して再ログインすると、ユーザが外れる(所属ユーザが0になると、グループも削除される)。
+- 部長でなくなったユーザは、グループから外れるため、委任された管理設定も使えなくなる。
+
+#### 5. (発展)確認ポイント
 
 - Keycloak管理画面 > Clients > nextcloud > [Client scopes] > [Evaluate] で、ユーザを指定して生成される情報を確認する。
 - Keycloak管理画面 > Sessions で、SAMLクライアントのセッションが作成されていることを確認する。
@@ -210,6 +311,13 @@ Nextcloudはコンテナ初回起動時に自動インストールされ、`user
     -> 画面のリクエストIDで、以下のようにログを確認する。
        $ docker exec nextcloud grep <リクエストID> /var/www/html/data/nextcloud.log
        `Found an Attribute element with duplicated Name`の場合は、手順1-8の`role_list`の除去ができていない。
+       `database is locked`の場合は、NextcloudのSQLiteの一時的なロック。もう一度ログインし直す。
+- 手順4で、`boss.sios`が管理設定を使えない(グループに`SAML_my-director-role`が入らない、または委任されない)
+    -> 次を確認する。
+       ・グループに何も入らない場合は、Keycloakの`Full scope allowed`が Off で、`my-director-role`を割り当てているか、
+         `Role list`の`Role attribute name`と、Nextcloudの`ユーザーグループをマップする属性`が同じ`groups`か。(手順4-1、4-2-2)
+       ・グループはあるのに左メニューに「管理」の項目が出ない場合は、`SAML_my-director-role`への委任ができているか。(手順4-4)
+         (完全な管理者ではないため、メニューの[管理者設定]は出ない。[設定]画面の左メニューを確認する)
 - Nextcloudでログアウトすると、Keycloakで`ログアウトに失敗しました`と表示される
     -> 手順1-6の`Logout Service Redirect Binding URL`が未設定。
        (Keycloakのログに`Can't finish SAML logout as there is no logout binding set`が出る)
@@ -286,11 +394,12 @@ Keycloakのレルムロールは、アクセストークンの`realm_access.role
    `Full scope allowed`が On であることを確認する。
 2. Grafanaの[Administration] > [Authentication] > [Generic OAuth] を開き、以下を設定して[Save]。
     - Role attribute path :
-      contains(realm_access.roles[*], 'my-director-role') && 'Admin' || contains(realm_access.roles[*], 'my-staff-role') && 'Editor' || 'Viewer'
+      contains(realm_access.roles[*], 'my-director-role') && 'Admin' || contains(realm_access.roles[*], 'my-manager-role') && 'Editor' || 'Viewer'
+   (左から順に判定される。部長は複合ロールで`my-manager-role`も持つため、先に`my-director-role`を判定する)
 3. 一度ログアウトし、ユーザを替えて再ログインして、以下になることを確認する。(ロールはログイン時に同期される)
-    - admin.sios : Admin   (my-director-role)
-    - staff.sios : Editor  (my-staff-role)
-    - taro.sios  : Editor  (課長のmy-manager-roleと、含まれるmy-staff-roleは持つが、my-director-roleは持たないため)
+    - boss.sios(部長)    : Admin   (my-director-role を持つ)
+    - taro.sios(課長)    : Editor  (my-manager-role は持つが、my-director-role は持たない)
+    - staff.sios(一般社員) : Viewer  (my-staff-role だけで、上記のどちらも持たない)
 4. ロールは、ローカル管理者でログインして[Administration] > [Users and access] > [Users]で確認できる。
 
 #### 5. (発展)確認ポイント
@@ -312,8 +421,9 @@ Keycloakのレルムロールは、アクセストークンの`realm_access.role
     -> Client Secretの値を確認する。
 - Grafanaで`Email is required`等のエラーになる
     -> Scopesに`email`が含まれているか確認する。
-- ロールが常に`Viewer`になる
-    -> Role attribute pathの記述(`my-director-role`等)と、Keycloakのユーザにロールが付与されているかを確認する。
+- 部長(`boss.sios`)や課長(`taro.sios`)でも`Viewer`になる
+    -> Role attribute pathの記述(`my-director-role`、`my-manager-role`)と、Keycloakのユーザにロールが付与されているかを確認する。
+       (一般社員(`staff.sios`)は`Viewer`で正しい)
 
 
 ### 独自実装した RP と RS で IdP 連携確認
@@ -365,14 +475,14 @@ SAMLやOIDCの設定を体験する演習とは違い、ここは「できあが
 ただし、そのアプリに割り当てていないスコープを要求すると、Keycloakは**ログインを拒否してエラー(`invalid_scope`)で戻す**。
 どのスコープを付与するかは、RPではなくKeycloakのクライアント設定で決まる。
 
-ユーザーと役職: `staff.sios`=一般社員、`taro.sios`=課長、`admin.sios`=部長。
+ユーザーと役職: `staff.sios`=一般社員、`taro.sios`=課長、`boss.sios`=部長。
 上位のロールは下位のロールを含む(Keycloakの複合ロール)。部長のトークンには、`my-director-role`だけでなく、含まれる`my-manager-role`と`my-staff-role`も入る。
 
 | 役職   | ユーザー   | 付与されるロール(トークンに入るもの)                                |
 |--------|------------|-----------------------------------------------------------------------|
 | 一般社員 | staff.sios | `my-staff-role`                                                       |
 | 課長   | taro.sios  | `my-manager-role`、`my-staff-role`                                    |
-| 部長   | admin.sios | `my-director-role`、`my-manager-role`、`my-staff-role`                   |
+| 部長   | boss.sios  | `my-director-role`、`my-manager-role`、`my-staff-role`                   |
 
 RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`@PreAuthorize`)
 
@@ -431,9 +541,9 @@ RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`
 4. `GET 承認待ちの一覧`を押す。→ **200**。申請中の経費が全員分返る。(課長以上は一覧を見られる)
 5. `POST 経費を承認する`を、IDを`1`にして押す。→ **403**。`granted`のロールに`my-director-role`が無い。
    (課長は一覧を見られるが、承認は部長だけ)
-6. ログアウトし、同じアプリ、`expenses:approve`にチェックを入れて、`admin.sios`(部長)でログインする。
+6. ログアウトし、同じアプリ、`expenses:approve`にチェックを入れて、`boss.sios`(部長)でログインする。
    [取得したトークンの中身]のロールに、`my-director-role`、`my-manager-role`、`my-staff-role`の3つが入っている。(複合ロール)
-7. `POST 経費を承認する`を、IDを`1`にして押す。→ **200**。`status`が`承認済み`、`approvedBy`が`admin.sios`になる。
+7. `POST 経費を承認する`を、IDを`1`にして押す。→ **200**。`status`が`承認済み`、`approvedBy`が`boss.sios`になる。
 8. `GET 承認待ちの一覧`を押すと、承認した経費が消えている。
 9. `GET 承認済みの一覧`を押す。→ **200**。承認した経費が`承認済み`で入っている。
 
@@ -446,11 +556,11 @@ RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`
    申請アプリには`expenses:approve`を割り当てていない(Keycloakが許していない)ため、ユーザーが誰でも、ログイン自体が拒否される。
    [通信のトレース]の「2. Keycloakから戻る」にも、同じエラーが表示される。
 3. `経費承認アプリ`に変えて、`expenses:write`にチェックを入れてログインする。→ 同じく`invalid_scope`。承認アプリには`expenses:write`を割り当てていない。
-4. `経費申請アプリ`、`expenses:write`にチェックを入れて、`admin.sios`(部長)でログインする。→ ログインできる。
+4. `経費申請アプリ`、`expenses:write`にチェックを入れて、`boss.sios`(部長)でログインする。→ ログインできる。
 5. `GET 承認待ちの一覧`を押す。→ **200**。承認待ちの一覧は、`expenses:read`とロール`my-manager-role`で見られる。(スコープ`expenses:approve`は要らない)
 6. `POST 経費を承認する`を、IDを`1`にして押す。→ **403**。ロール`my-director-role`はあるが、スコープ`expenses:approve`が無い。
    部長でも、申請アプリでは承認を要求できない。
-7. ログアウトし、`経費承認アプリ`、チェックは**どちらも外して**、`admin.sios`でログインする。
+7. ログアウトし、`経費承認アプリ`、チェックは**どちらも外して**、`boss.sios`でログインする。
 8. `POST 経費を承認する`を、IDを`1`にして押す。→ **403**。ロールはあるが、スコープ`expenses:approve`を要求していない。
 
 #### まとめ(期待される結果)
@@ -462,13 +572,13 @@ RSの各APIは、次の条件で許可を判断する。(`ExpenseController`の`
 |--------|-------------------|------------------|------|------|----------|------|--------------------------------------------------|
 | 申請   | なし              | staff.sios(一般社員) | 200  | 403  | 403      | 403  | 申請はwriteスコープ無し。承認待ちと承認はロール不足    |
 | 申請   | あり(write)      | staff.sios(一般社員) | 200  | 201  | 403      | 403  | 承認待ちと承認はロール不足                         |
-| 申請   | あり(write)      | admin.sios(部長)   | 200  | 201  | 200      | 403  | 承認はapproveスコープ無し(申請アプリには割り当てていない) |
+| 申請   | あり(write)      | boss.sios(部長)    | 200  | 201  | 200      | 403  | 承認はapproveスコープ無し(申請アプリには割り当てていない) |
 | 申請   | あり(approve)    | 誰でも           | -    | -    | -        | -    | **ログインが拒否される**(invalid_scope)             |
 | 承認   | あり(write)      | 誰でも           | -    | -    | -        | -    | **ログインが拒否される**(invalid_scope)             |
-| 承認   | なし              | admin.sios(部長)   | 200  | 403  | 200      | 403  | 承認はapproveスコープ無し                          |
+| 承認   | なし              | boss.sios(部長)    | 200  | 403  | 200      | 403  | 承認はapproveスコープ無し                          |
 | 承認   | あり(approve)    | staff.sios(一般社員) | 200  | 403  | 403      | 403  | ロール不足(課長以上ではない)                      |
 | 承認   | あり(approve)    | taro.sios(課長)    | 200  | 403  | 200      | 403  | 承認はロール不足(部長のみ)                        |
-| 承認   | あり(approve)    | admin.sios(部長)   | 200  | 403  | 200      | 200  | -                                                |
+| 承認   | あり(approve)    | boss.sios(部長)    | 200  | 403  | 200      | 200  | -                                                |
 
 (表の「申請」「承認」はアプリ。「申請」列は`POST /apis/expenses`、「承認」列は`POST /apis/expenses/{id}/approve`の結果)
 

@@ -374,7 +374,7 @@ call_create_user()
 		"$1/admin/realms/$3/users" \
 		-H "Authorization: Bearer $2" \
 		-H "Content-Type: application/json" \
-		-d "{\"username\": \"$4\", \"firstName\": \"$NAME_F\", \"lastName\": \"$NAME_L\", \"email\": \"$4@test.com\", \"enabled\": true, \"credentials\": [{\"type\": \"password\", \"value\": \"$5\", \"temporary\": false}]}"
+		-d "{\"username\": \"$4\", \"firstName\": \"$NAME_F\", \"lastName\": \"$NAME_L\", \"email\": \"$4@example.com\", \"enabled\": true, \"credentials\": [{\"type\": \"password\", \"value\": \"$5\", \"temporary\": false}]}"
 }
 # }}}
 

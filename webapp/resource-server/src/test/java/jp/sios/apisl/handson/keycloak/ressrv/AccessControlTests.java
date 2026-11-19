@@ -95,7 +95,7 @@ class AccessControlTests {
 			.andExpect(status().isOk());
 		// 部長のトークン: すべてのロール(複合ロールで展開済み)
 		mvc.perform(get("/apis/expenses/pending")
-				.with(token("admin.sios", "SCOPE_expenses:read",
+				.with(token("boss.sios", "SCOPE_expenses:read",
 					"ROLE_my-director-role", "ROLE_my-manager-role", "ROLE_my-staff-role")))
 			.andExpect(status().isOk());
 	}
@@ -138,18 +138,18 @@ class AccessControlTests {
 	@Test
 	void approve_needsScopeAndDirectorRole() throws Exception {
 		mvc.perform(post("/apis/expenses/1/approve").with(csrf())
-				.with(token("admin.sios", "SCOPE_expenses:approve",
+				.with(token("boss.sios", "SCOPE_expenses:approve",
 					"ROLE_my-director-role", "ROLE_my-manager-role", "ROLE_my-staff-role")))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("承認済み"))
-			.andExpect(jsonPath("$.approvedBy").value("admin.sios"));
+			.andExpect(jsonPath("$.approvedBy").value("boss.sios"));
 	}
 
 	@Test
 	void approveWithDirectorRoleButWithoutApproveScope_403() throws Exception {
 		// 部長でも、アプリに承認のスコープ(expenses:approve)が無ければ承認できない
 		mvc.perform(post("/apis/expenses/1/approve").with(csrf())
-				.with(token("admin.sios", "SCOPE_expenses:read",
+				.with(token("boss.sios", "SCOPE_expenses:read",
 					"ROLE_my-director-role", "ROLE_my-manager-role", "ROLE_my-staff-role")))
 			.andExpect(status().isForbidden());
 	}

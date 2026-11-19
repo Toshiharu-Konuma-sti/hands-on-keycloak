@@ -52,10 +52,10 @@ show_url()
 /************************************************************
  * Information:
  * - Navigate to Web ui tools with the URL below.
- *   - Keycloak:    http://localhost:8080/
- *   - Grafana:     http://localhost:3000/
- *   - Nextcloud:   http://localhost:8081/
- *   - Relying Party:   http://localhost:8222/
+ *   - Keycloak:        http://localhost:8080
+ *   - Grafana:         http://localhost:3000
+ *   - Nextcloud:       http://localhost:8081
+ *   - Relying Party:   http://localhost:8222
  *   - Resource Server: http://localhost:8111/apis/whoami (needs an access token)
  ***********************************************************/
 

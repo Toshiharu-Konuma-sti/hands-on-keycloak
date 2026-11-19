@@ -90,19 +90,19 @@
 	</g>
 
 	<g class="branch claim" th:classappend="${currentApp == null ? '' : (currentApp.id() == 'app-expense-claim' ? 'active' : 'inactive')}">
-		<path class="line" d="M260,48 V24 H310" marker-end="url(#arrow)"/>
-		<path class="line" d="M600,24 H650 V48"/>
-		<rect class="box" x="310" y="4" width="290" height="40" rx="8"/>
-		<text x="455" y="29" class="name">RP：申請アプリ <tspan class="sub">(app-expense-claim)</tspan></text>
-		<text x="590" y="17" class="badge">ACTIVE</text>
+		<path class="line" d="M260,48 V24 H290" marker-end="url(#arrow)"/>
+		<path class="line" d="M620,24 H650 V48"/>
+		<rect class="box" x="290" y="4" width="330" height="40" rx="8"/>
+		<text x="455" y="29" class="name">RP：経費申請アプリ <tspan class="sub">(app-expense-claim)</tspan></text>
+		<text x="610" y="17" class="badge">ACTIVE</text>
 	</g>
 
 	<g class="branch approval" th:classappend="${currentApp == null ? '' : (currentApp.id() == 'app-expense-approval' ? 'active' : 'inactive')}">
-		<path class="line" d="M260,48 V72 H310" marker-end="url(#arrow)"/>
-		<path class="line" d="M600,72 H650 V48"/>
-		<rect class="box" x="310" y="52" width="290" height="40" rx="8"/>
-		<text x="455" y="77" class="name">RP：承認アプリ <tspan class="sub">(app-expense-approval)</tspan></text>
-		<text x="590" y="65" class="badge">ACTIVE</text>
+		<path class="line" d="M260,48 V72 H290" marker-end="url(#arrow)"/>
+		<path class="line" d="M620,72 H650 V48"/>
+		<rect class="box" x="290" y="52" width="330" height="40" rx="8"/>
+		<text x="455" y="77" class="name">RP：経費承認アプリ <tspan class="sub">(app-expense-approval)</tspan></text>
+		<text x="610" y="65" class="badge">ACTIVE</text>
 	</g>
 
 	<g class="node rs">
@@ -133,7 +133,7 @@
 		<tr><th>ユーザー</th><th>役職</th><th>付与されるロール(上位のロールは下位を含む)</th></tr>
 		<tr><td>staff.sios</td><td>一般社員</td><td><span class="tag role">my-staff-role</span></td></tr>
 		<tr><td>taro.sios</td><td>課長</td><td><span class="tag role">my-manager-role</span> + 一般社員のロール(<span class="tag role">my-staff-role</span>)</td></tr>
-		<tr><td>admin.sios</td><td>部長</td><td><span class="tag role">my-director-role</span> + 課長と一般社員のロール(<span class="tag role">my-manager-role</span>, <span class="tag role">my-staff-role</span>)</td></tr>
+		<tr><td>boss.sios</td><td>部長</td><td><span class="tag role">my-director-role</span> + 課長と一般社員のロール(<span class="tag role">my-manager-role</span>, <span class="tag role">my-staff-role</span>)</td></tr>
 	</table>
 </details>
 
