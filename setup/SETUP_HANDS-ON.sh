@@ -4,10 +4,11 @@ set -e
 clear
 S_TIME=$(date +%s)
 CUR_DIR=$(cd $(dirname $0); pwd)
+. ${CUR_DIR}/common.sh
 
-echo "############################################################"
-echo "# START SCRIPT"
-echo "############################################################"
+start_banner
+
+check_required_commands "jq"
 
 $CUR_DIR/step01-create_realm.sh
 $CUR_DIR/step02-create_client_scope.sh
@@ -20,9 +21,4 @@ $CUR_DIR/step08-assign_realm_role_to_group.sh
 $CUR_DIR/step09-create_user.sh
 $CUR_DIR/step10-assign_user_to_group.sh
 
-E_TIME=$(date +%s)
-DURATION=$((E_TIME - S_TIME))
-
-echo "############################################################"
-echo "# FINISH SCRIPT ($DURATION seconds)"
-echo "############################################################"
+finish_banner ${S_TIME}
