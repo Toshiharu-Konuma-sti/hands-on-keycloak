@@ -45,7 +45,7 @@
 		<button type="submit">トレースと履歴を消去</button>
 	</form>
 	<p class="note" th:if="${steps.isEmpty()}">ログインすると、ここに各ステップの通信内容が表示される。</p>
-	<details th:each="s : ${steps}">
+	<details th:each="s : ${steps}" th:id="${#strings.startsWith(s.title(), '1.') ? 'step-auth-request' : (#strings.startsWith(s.title(), '3.') ? 'step-token-exchange' : null)}">
 		<summary th:text="${s.title()}"></summary>
 		<p class="note" th:text="${s.note()}"></p>
 		<b th:text="${s.requestLabel() ?: 'リクエスト'}">リクエスト</b>

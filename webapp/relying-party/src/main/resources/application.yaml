@@ -8,6 +8,14 @@ server:
 spring:
   application:
     name: apisl.handson.keycloak.rp
+  web:
+    resources:
+      chain:
+        # app.jsやstyle.cssのURLに内容のハッシュを付け、更新時にブラウザの古いキャッシュが使われないようにする
+        strategy:
+          content:
+            enabled: true
+            paths: /**
 
 handson:
   keycloak:

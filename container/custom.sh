@@ -38,7 +38,7 @@ rebuild_container()
 	IMAGE_NM=$(docker inspect --format='{{.Config.Image}}' $CONTAINER_NM)
 	docker rm $CONTAINER_NM
 	docker rmi $IMAGE_NM
-	docker-compose \
+	docker compose \
 		-f $CUR_DIR/docker-compose.yml \
 		up -d -V --build $CONTAINER_NM
 }
@@ -53,8 +53,8 @@ show_url()
  * Information:
  * - Navigate to Web ui tools with the URL below.
  *   - Keycloak:        http://localhost:8080
- *   - Grafana:         http://localhost:3000
  *   - Nextcloud:       http://localhost:8081
+ *   - Grafana:         http://localhost:3000
  *   - Relying Party:   http://localhost:8222
  *   - Resource Server: http://localhost:8111/apis/whoami (needs an access token)
  ***********************************************************/

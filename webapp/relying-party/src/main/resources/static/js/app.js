@@ -4,6 +4,17 @@ document.addEventListener('change', (event) => {
 	document.querySelectorAll('input[type=checkbox][name=scope]').forEach((box) => { box.checked = false; });
 });
 
+// トークンのペイロードから、そのトークンを得た通信(トレースの該当ステップ)へ移動し、開いて見せる。
+// トレースを消去した後などで該当ステップが無いときは、トレース欄の先頭へ移動する
+document.addEventListener('click', (event) => {
+	const link = event.target.closest('a.trace-link');
+	if (!link) return;
+	event.preventDefault();
+	const step = document.querySelector(link.getAttribute('href'));
+	if (step) step.open = true;
+	(step || document.getElementById('trace-section'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
 // API呼び出しとトレース消去は、ページ全体を読み直さず、結果欄とトレースだけを差し替える。
 // (ログイン/ログアウトはセッションが変わるため、従来どおりページ全体を読み直す)
 document.addEventListener('submit', async (event) => {

@@ -11,7 +11,7 @@
         - [1. KeycloakにSAMLクライアントを作成する](#1-keycloakにsamlクライアントを作成する)
         - [2. NextcloudにSAMLの設定をする](#2-nextcloudにsamlの設定をする)
         - [3. 動作確認](#3-動作確認)
-        - [4. (発展)ロールマッピングで部長だけ管理設定を使えるようにする](#4-発展ロールマッピングで部長だけ管理設定を使えるようにする)
+        - [4. (発展)部長のグループに管理設定を委任する](#4-発展部長のグループに管理設定を委任する)
         - [5. (発展)確認ポイント](#5-発展確認ポイント)
         - [トラブルシュート](#トラブルシュート)
     - [GrafanaでOIDC連携](#grafanaでoidc連携)
@@ -111,9 +111,9 @@ OIDCのスコープやロールに相当することは、SAMLでも、属性(At
 - スコープが無いため、連携先が「何を受け取るか」を要求することはできない。IdP側で、クライアントごとに出力する属性をマッパーで固定する。
   KeycloakではSAMLクライアントにもClient scopesがあり、属性の出力セットとして使えるが、リクエストごとに変えることはできない。
 - IdPの役割は、ロールやグループを属性として渡すところまで。渡された属性を権限にどう反映するかは、連携先(SP)の機能による。
-  Nextcloudでは、`user_saml`の[属性マッピング]にある「グループにマップする属性」で、SAML属性をNextcloudのグループに対応づけられる。(「NextcloudでSAML連携」の手順4で、実際に設定する)
+  Nextcloudでは、`user_saml`の[属性マッピング]にある「グループにマップする属性」で、SAML属性をNextcloudのグループに対応づけられる。(「NextcloudでSAML連携」の手順2で、実際に設定する)
 - ログイン自体をIdP側で制限することもできる(特定のロールを持つユーザだけに許可する等)が、OIDCほど手軽ではない。実務では「属性を渡し、SP側で制御する」形が主流。
-- 手順1-8で外した`role_list`は、ロールごとに同名の`Role`属性を複数出力する標準の仕組み。Nextcloudではエラーになるため、ロールを渡したい場合は、`Group list`マッパー等で別名(例: `groups`)の属性にする。
+- 手順1-8で外した`role_list`は、ロールごとに同名の`Role`属性を複数出力する標準の仕組み。Nextcloudではエラーになるため、ロールは、別のマッパーで別名(例: `groups`)の1つの属性にまとめて渡す。(手順1-10)
 
 
 ### NextcloudでSAML連携
@@ -157,7 +157,18 @@ Nextcloudはコンテナ初回起動時に自動インストールされ、`user
 
 8. [Client scopes]タブで`role_list`を選択して[Remove]する。
    (`role_list`は既定で、ロールごとに同名(`Role`)のAttributeを複数出力する。
-    Nextcloudのsaml処理は同名のAttributeを許さずエラーになるため。ロールは、手順3までは使わない。手順4で、別のマッパーを使って渡す)
+    Nextcloudのsaml処理は同名のAttributeを許さずエラーになるため。ロールは、手順10で別のマッパーを使って渡す)
+9. [Client scopes]タブ > `<Client ID>-dedicated` > [Scope]タブを開き、`Full scope allowed`を Off にする。
+   [Assign role]を押して、レルムロールの`my-director-role`を選んで[Assign]する。
+   (Nextcloudに渡すロールを絞る。Onのままだと、`default-roles-handson`や`offline_access`等の無関係なロールも、すべてNextcloudのグループになる。
+    `my-director-role`は複合ロールのため、含まれる`my-manager-role`と`my-staff-role`も対象になる)
+10. [Client scopes]タブ > `<Client ID>-dedicated` > [Mappers]タブ > [Add mapper] > [By configuration] > `Role list` で、以下を入力して[Save]。
+    - Name                     : groups
+    - Role attribute name      : groups
+    - SAML Attribute NameFormat: Basic
+    - Single Role Attribute    : On (既定)
+   (手順8で外した`role_list`の代わりに、ロールを`groups`という1つのAttributeにまとめて出力する。
+    OIDCがロールを最初からトークンに含めるのと同様に、ここで最初からグループとして渡す。Onにすると、複数のロールが1つのAttributeにまとまる)
 
 #### 2. NextcloudにSAMLの設定をする
 
@@ -195,7 +206,9 @@ Nextcloudはコンテナ初回起動時に自動インストールされ、`user
     - [属性マッピング]
         - 表示名をにマップする属性         : displayName
         - 電子メールアドレスをマップする属性 : email
-        - (クォータ/ホーム/グループ/MFA/LDAP/グループマッピング接頭辞は空欄のまま。グループは手順4で設定する)
+        - ユーザーグループをマップする属性   : groups
+          (手順1-10で出力した`groups`属性。値がNextcloudのグループになりKeycloakのロールと連携する。グループ名には既定の接頭辞`SAML_`が付く。例: `my-director-role`なら`SAML_my-director-role`)
+        - (クォータ/ホーム/MFA/LDAP/グループマッピング接頭辞は空欄のまま。接頭辞を空にすると既定の`SAML_`が使われる)
     - [セキュリティ設定]は既定のままにする。
 7. [変更を保存]を押す。
 8. 設定画面に`有効なメタデータ`と表示されることを確認する。(`メタデータが無効です`の場合は入力値を見直す)
@@ -208,50 +221,8 @@ Nextcloudはコンテナ初回起動時に自動インストールされ、`user
 2. ログイン画面の[SSO & SAML log in]を押す。
 3. Keycloakのログイン画面に遷移することを確認し、`boss.sios / boss.sios`でログインする。（ログインするユーザーの初回アクセス時には、NextCloud側の準備があるためリダイレクト時間が少々掛かる）
 4. Nextcloudにログインでき、右上のユーザが`boss.sios`になっていることを確認する。
-5. ローカル管理者でログインし直し、[ユーザ]一覧に`boss.sios`が自動作成されていることを確認する。
-6. 他のユーザ(`staff.sios`、`taro.sios`)でも同様にログインできることを確認する。
-7. Nextcloudの右上のアイコン > [ログアウト]を押し、Keycloakを経由してNextcloudのログイン画面に戻ることを確認する。
-   (Keycloak管理画面 > Sessions で、該当ユーザのセッションが消えていることも確認する)
-
-#### 4. (発展)ロールマッピングで部長だけ管理設定を使えるようにする
-
-`my-director-role`を持つユーザ(部長)だけに、Nextcloudの管理設定(一部)を使えるようにする。それ以外のユーザは一般ユーザのままにする。
-
-Nextcloudには、Grafanaの`Admin/Editor/Viewer`のような名前付きのロールは無い。代わりに、「グループ」に権限を与える。
-そのため、「Keycloakのロール → Nextcloudのグループ → 管理設定の委任」の形で連携する。
-
-- Keycloak(IdP): ユーザのロールをAttribute`groups`として出力する。
-- Nextcloud(SP): Attribute`groups`の値を、グループとしてユーザに所属させる。グループ名には、既定の接頭辞`SAML_`が付く。(`my-director-role`なら`SAML_my-director-role`)
-  このグループに、Nextcloudの[管理者権限]画面(管理設定の委任)で、管理設定の一部を許可する。
-
-(補足) Nextcloudの完全な管理者は、標準の`admin`グループの所属者だけで、SAMLのグループ(`SAML_`付き)とは別物になる。
-そのため、ここでは完全な管理者にはせず、委任で許可した管理設定だけを使えるようにする。
-
-##### 4-1. Keycloakでロールを出力する
-
-1. http://localhost:8080/admin/ で`handson`レルムを選択し、[Clients] > `nextcloud` > [Client scopes]タブ > `nextcloud-dedicated` > [Scope]タブを開く。
-2. `Full scope allowed`を Off にし、[Assign role]を押して、レルムロールの`my-director-role`を選んで[Assign]する。
-   (Nextcloudに渡すロールを絞る。Onのままだと、`default-roles-handson`や`offline_access`等の無関係なロールも、すべてNextcloudのグループになる。
-    `my-director-role`は複合ロールのため、含まれる`my-manager-role`と`my-staff-role`も対象になる)
-3. [Mappers]タブ > [Configure a new mapper](または[Add mapper] > [By configuration]) > `Role list` で、以下を入力して[Save]。
-    - Name                     : groups
-    - Role attribute name      : groups
-    - SAML Attribute NameFormat: Basic
-    - Single Role Attribute    : On (既定)
-   (手順1-8で外した`role_list`とは別に、専用のマッパーで出力する。Onにすると、複数のロールが1つのAttributeにまとめて出力される)
-
-##### 4-2. Nextcloudでグループにマップする
-
-1. Nextcloudにローカル管理者でログインし、[管理者設定] > [SSOとSAML認証] > `プロバイダー 1` の設定画面を開く。
-2. [属性マッピング]の`ユーザーグループをマップする属性`に`groups`を入力し、[変更を保存]を押す。
-   (`グループマッピング接頭辞`は空欄のまま。既定の`SAML_`が使われる)
-3. 設定画面に`有効なメタデータ`と表示されることを確認する。
-
-##### 4-3. グループの作成を確認する
-
-1. Nextcloudからログアウトし、`boss.sios / boss.sios`でログインし直す。(ロールは、ログインのたびにグループへ反映される)
-2. 同様に、`taro.sios`と`staff.sios`でもログインする。
-3. ローカル管理者でログインし直し、[ユーザー]一覧で、各ユーザのグループが以下になっていることを確認する。
+5. 他のユーザ(`staff.sios`、`taro.sios`)でも同様にログインできることを確認する。(グループは、ログインのたびにロールから反映される)
+6. ローカル管理者でログインし直し、[ユーザー]一覧に各ユーザが自動作成され、グループが以下になっていることを確認する。
 
     | ユーザ     | 所属するグループ                                 |
     |------------|--------------------------------------------------|
@@ -263,27 +234,40 @@ Nextcloudには、Grafanaの`Admin/Editor/Viewer`のような名前付きのロ�
     コマンドでも確認できる。
        $ docker exec -u www-data nextcloud php occ group:list
        $ docker exec -u www-data nextcloud php occ user:info boss.sios
+7. Nextcloudの右上のアイコン > [ログアウト]を押し、Keycloakを経由してNextcloudのログイン画面に戻ることを確認する。
+   (Keycloak管理画面 > Sessions で、該当ユーザのセッションが消えていることも確認する)
 
-##### 4-4. 部長のグループに管理設定を委任する
+#### 4. (発展)部長のグループに管理設定を委任する
+
+`my-director-role`を持つユーザ(部長)のグループだけに、Nextcloudの管理設定(一部)を使えるようにする。それ以外のユーザは一般ユーザのままにする。
+
+Nextcloudには、Grafanaの`Admin/Editor/Viewer`のような名前付きのロールは無い。代わりに、「グループ」に権限を与える。
+手順1〜3で、Keycloakのロールは既にNextcloudのグループ(`SAML_my-director-role`等)として連携済み。
+ここでは、そのグループに「管理設定の委任」を行い、「Keycloakのロール → Nextcloudのグループ → 管理設定の委任」の連携を完成させる。
+
+(補足) Nextcloudの完全な管理者は、標準の`admin`グループの所属者だけで、SAMLのグループ(`SAML_`付き)とは別物になる。
+そのため、ここでは完全な管理者にはせず、委任で許可した管理設定だけを使えるようにする。
+
+##### 4-1. 部長のグループに管理設定を委任する
 
 1. ローカル管理者で、右上のアイコン > [管理者設定] > 左メニュー「管理」の[管理者権限]を開く。(UIが英語の場合は`Administration privileges`。http://localhost:8081/settings/admin/admindelegation でも開ける)
    (「ここではどのグループが、どの管理設定項目にアクセスできるか決めることができます。」と表示される画面)
 2. 許可したい設定の項目の欄だけに、委任先のグループ`my-director-role`(ID: `SAML_my-director-role`)を選ぶ。ここでは、例として`共有 - Global`の1つだけにする。
    (他の欄は空のままにする。全ての欄に入れると、`SSO & SAML authentication`(SAML設定)や`ログ`等も部長に開放されてしまう)
-   (グループは、手順4-3でログインしたときに作成されている。ここで選べない場合は、手順4-3の`boss.sios`のログインを確認する)
+   (グループは、手順3でログインしたときに作成されている。ここで選べない場合は、手順3の`boss.sios`のログインを確認する)
    コマンドでも設定できる。
        $ docker exec -u www-data nextcloud php occ admin-delegation:add 'OCA\Settings\Settings\Admin\Sharing' SAML_my-director-role
        $ docker exec -u www-data nextcloud php occ admin-delegation:show
 
-##### 4-5. 動作確認
+##### 4-2. 動作確認
 
 1. `boss.sios`でログインし直し、右上のアイコンのメニューから[設定]を開く。
-   左メニューの「管理」に、手順4-4で許可した項目(`共有`)だけが表示され、開けることを確認する。
+   左メニューの「管理」に、手順4-1で許可した項目(`共有`)だけが表示され、開けることを確認する。
    (完全な管理者と違い、メニューに[管理者設定]は出ない。委任された項目は、[設定]画面の左メニューに現れる)
    (直接 http://localhost:8081/settings/admin/sharing を開いても確認できる)
 2. `taro.sios`と`staff.sios`でログインし、左メニューに「管理」の項目が表示されない(一般ユーザ)ことを確認する。
 
-##### 4-6. 注意点
+##### 4-3. 注意点
 
 - 委任は、`admin`グループの管理者(`admin / password`)の権限とは別物。委任できるのは、Nextcloudが委任に対応している設定(`admin-delegation:show`で一覧できる)だけで、アプリの管理などは委任できない。
   (部長に`admin`グループの完全な管理者権限を与えるには、グループ名に接頭辞が付かないように、`グループマッピング接頭辞`を空にして保存する必要がある。
@@ -312,11 +296,11 @@ Nextcloudには、Grafanaの`Admin/Editor/Viewer`のような名前付きのロ�
        $ docker exec nextcloud grep <リクエストID> /var/www/html/data/nextcloud.log
        `Found an Attribute element with duplicated Name`の場合は、手順1-8の`role_list`の除去ができていない。
        `database is locked`の場合は、NextcloudのSQLiteの一時的なロック。もう一度ログインし直す。
-- 手順4で、`boss.sios`が管理設定を使えない(グループに`SAML_my-director-role`が入らない、または委任されない)
+- `boss.sios`が管理設定を使えない(グループに`SAML_my-director-role`が入らない、または委任されない)
     -> 次を確認する。
        ・グループに何も入らない場合は、Keycloakの`Full scope allowed`が Off で、`my-director-role`を割り当てているか、
-         `Role list`の`Role attribute name`と、Nextcloudの`ユーザーグループをマップする属性`が同じ`groups`か。(手順4-1、4-2-2)
-       ・グループはあるのに左メニューに「管理」の項目が出ない場合は、`SAML_my-director-role`への委任ができているか。(手順4-4)
+         `Role list`の`Role attribute name`と、Nextcloudの`ユーザーグループをマップする属性`が同じ`groups`か。(手順1-9、1-10、2-6)
+       ・グループはあるのに左メニューに「管理」の項目が出ない場合は、`SAML_my-director-role`への委任ができているか。(手順4-1)
          (完全な管理者ではないため、メニューの[管理者設定]は出ない。[設定]画面の左メニューを確認する)
 - Nextcloudでログアウトすると、Keycloakで`ログアウトに失敗しました`と表示される
     -> 手順1-6の`Logout Service Redirect Binding URL`が未設定。
